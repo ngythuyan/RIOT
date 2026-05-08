@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2017 Koen Zandberg <koen@bergzand.net>
- *
- * This file is subject to the terms and conditions of the GNU Lesser
- * General Public License v2.1. See the file LICENSE in the top level
- * directory for more details.
+ * SPDX-FileCopyrightText: 2017 Koen Zandberg <koen@bergzand.net>
+ * SPDX-License-Identifier: LGPL-2.1-only
  */
+
+#pragma once
 
 /**
  * @ingroup     net_gnrc_rpl
@@ -12,13 +11,11 @@
  * @file
  * @brief       Minimum Rank with Hysteresis Objective Function
  *
- * Header-file, which defines all functions for the implementation of Minimum Rank with Hysteresis Objective Function.
+ * Header-file, which defines all functions for the implementation of Minimum Rank
+ * with Hysteresis Objective Function.
  *
  * @author      Koen Zandberg <koen@bergzand.net>
  */
-
-#ifndef MRHOF_H
-#define MRHOF_H
 
 #include "net/gnrc/rpl/structs.h"
 
@@ -39,12 +36,7 @@ extern "C" {
 /**
  * @brief   Highest path cost
  */
-#define MRHOF_MAX_PATH_COST           32768
-
-/**
- * @brief   Number of possible parents
- */
-#define MRHOF_PARENT_SET_SIZE             3
+#define MRHOF_MAX_PATH_COST           3276
 
 /**
  * @brief   Return the address to the MRH objective function
@@ -56,8 +48,6 @@ gnrc_rpl_of_t *gnrc_rpl_get_of_mrhof(void);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* MRHOF_H */
 /**
  * @}
  */
