@@ -1,0 +1,138 @@
+/*
+ * SPDX-FileCopyrightText: 2015 Inria
+ * SPDX-License-Identifier: LGPL-2.1-only
+ */
+
+/**
+ * @ingroup     examples
+ * @{
+ *
+ * @file
+ * @brief       Showing minimum memory footprint of gnrc network stack
+ *
+ * @author      Oliver Hahm <oliver.hahm@inria.fr>
+ *
+ * @}
+ */
+
+#include <stdio.h>
+#include <string.h>
+#include "xtimer.h"
+#include "thread.h"
+#include <inttypes.h>
+
+#include "msg.h"
+#include "net/sock/udp.h"
+#include "net/sock/util.h"
+#include "net/sock/async/event.h"
+#include "net/ipv6/addr.h"
+
+#include "net/gnrc.h"
+#include "net/gnrc/ipv6.h"
+#include "net/gnrc/netif/hdr.h"
+#include "net/ipv6/addr.h"
+#include "net/netif.h"
+#include "net/gnrc/netif.h"
+#include "net/gnrc/ipv6.h"
+#include "net/gnrc/rpl/dodag.h"
+#include "net/gnrc/udp.h"
+#include "net/gnrc/pktdump.h"
+#include "net/gnrc/rpl.h"
+
+#include "random.h"
+#include "utlist.h"
+#include "periph/adc.h"
+
+#define DEFAULT_PORT            (12345)
+#define MAIN_QUEUE_SIZE (8)
+static msg_t _main_msg_queue[MAIN_QUEUE_SIZE];
+
+static void _print_addr(void) 
+{
+    /* print all IPv6 addresses */
+    printf("{\"IPv6 addresses\": [\"");
+    netifs_print_ipv6("\", \"");
+    puts("\"]}");
+}
+
+/* ================= Main ================= */
+int main(void)
+{
+    /* ================= Init Node ================= */
+    msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
+    printf("\n=== RPL Node Starting ===\n");
+    xtimer_sleep(2);
+
+    /* Get first network interface */
+    gnrc_netif_t *netif = gnrc_netif_iter(NULL);
+    if (!netif) {
+        puts("No network interface found");
+        return 1;
+    }
+    printf("Network interface PID: %d\n", netif->pid);
+
+    /* init RPL */
+    gnrc_rpl_init(netif->pid);
+    xtimer_sleep(2);
+
+    _print_addr();
+
+    /* ================= Register at root ================= */
+    /* find own address */
+    ipv6_addr_t dodag_id;
+    ipv6_addr_t addrs[2];
+    ssize_t get_ipv6 = netifs_get_ipv6(addrs, 2);
+
+    while(get_ipv6 < 2) {
+        continue;
+    }
+    dodag_id = addrs[1];
+
+    char node_addr[IPV6_ADDR_MAX_STR_LEN];
+    ipv6_addr_to_str(node_addr, &dodag_id, sizeof(node_addr));
+    
+    /* send own address to root */
+    sock_udp_ep_t remote = { 0 };
+    if (sock_udp_str2ep(&remote, "[2001:db8::1\%7]:1234") < 0) {
+        puts("Unable to parse destination address");
+        return 1;
+    }
+
+    /* prepare udp endpoint*/
+    int res;
+
+    /* send UDP msg */
+    if((res = sock_udp_send(NULL, node_addr, sizeof(node_addr), &remote)) < 0) {
+        puts("could not send");
+    }
+
+    xtimer_sleep(5);
+
+    /* ================= Receive messages and send reply ================= */
+    static char server_buffer[128];
+    /* UDP setup */
+    sock_udp_t sock;
+    sock_udp_ep_t server = { .port = DEFAULT_PORT, .family = AF_INET6 };
+    if(sock_udp_create(&sock, &server, NULL, 0) < 0) {
+        return 1;
+    }
+
+    while(1)
+    {
+        /* receive UDP */
+        int res;
+        if ((res = sock_udp_recv(&sock, server_buffer,
+                                sizeof(server_buffer) - 1, SOCK_NO_TIMEOUT,
+                                NULL)) < 0) {
+            printf("Error while receiving: %d\n", res);
+            continue;
+        }
+
+        /* send response */
+        // TODO: add values to msg, send msg
+        if((res = sock_udp_send(NULL, node_addr, sizeof(node_addr), &remote)) < 0) {
+            puts("could not send");
+        }
+    }
+    return 0;
+}
