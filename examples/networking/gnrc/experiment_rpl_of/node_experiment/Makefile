@@ -11,8 +11,12 @@ RIOTBASE ?= $(CURDIR)/../../../../..
 USEMODULE += ztimer
 USEMODULE += ztimer_sec
 USEMODULE += ztimer_usec
-USEMODULE += shell
 USEMODULE += sema_inv
+
+# Neighbor Stats
+USEMODULE += netstats_neighbor
+USEMODULE += netstats_neighbor_etx
+USEMODULE += netstats_neighbor_rssi
 
 # For UDP
 USEMODULE += sock_udp
@@ -35,11 +39,11 @@ USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
-
-# Neighbor Stats
-USEMODULE += netstats_neighbor
-USEMODULE += netstats_neighbor_etx
-USEMODULE += netstats_neighbor_rssi
+USEMODULE += gnrc_rpl_mrhof_etx
+# optional alternative metric, hardware must support it
+#USEMODULE += gnrc_rpl_mrhof_lqi
+# use only when battery connected
+#USEMODULE += gnrc_rpl_mrhof_energy
 
 # Battery
 FEATURES_REQUIRED += periph_adc

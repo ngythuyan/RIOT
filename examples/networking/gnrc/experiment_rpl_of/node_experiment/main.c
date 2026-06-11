@@ -24,6 +24,16 @@
 #include "net/netstats.h"
 #include "net/netstats/neighbor.h"
 
+void print_rpl_parent(void) {
+    gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(INSTANCE_ID_DEFAULT);
+    if (inst && inst->dodag.parents) {
+        char addr_str[IPV6_ADDR_MAX_STR_LEN];
+        ipv6_addr_to_str(addr_str, &inst->dodag.parents->addr, sizeof(addr_str));
+        printf("RPL parent: %s\n", addr_str);
+    } else {
+        puts("RPL: no parent found");
+    }
+}
 // for battery reading
 #if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
     #include "battery.h"
@@ -108,6 +118,7 @@ static void get_stats(void)
     netstats_nb_t nb_stats;
     netstats_nb_get(&iface->netif, nce.l2addr, nce.l2addr_len, &nb_stats);
 
+    printf("Node: ETX-%d, RSSI-%d, LQI-%d\n", nb_stats.etx, nb_stats.rssi, nb_stats.lqi);
     ping->etx = nb_stats.etx;
     ping->rssi = nb_stats.rssi;
     return;
@@ -164,6 +175,7 @@ static void *_send_thread(void *ctx)
         puts("Send: Unable to parse destination address");
     }
 
+    print_rpl_parent();
     while (running) {
         /* prepare ping message */
         get_parent(ping->parent);
@@ -255,5 +267,6 @@ int main(void)
    memset(send_thread_stack, 0, sizeof(send_thread_stack));
    memset(listen_thread_stack, 0, sizeof(listen_thread_stack));
    
+   puts("Node: Finished sending all pings!");
    return 0;
 }

@@ -49,7 +49,7 @@ static uint32_t delay_us = US_PER_SEC;
 
 /* duration of experiment */
 #ifndef NUM_OF_PINGS
-#define NUM_OF_PINGS  (1100)
+#define NUM_OF_PINGS  (100)
 #endif
 
 /* Size of network */
@@ -96,7 +96,8 @@ static uint32_t delay_us = US_PER_SEC;
  * @brief   Default address, iface, port of server
  */
 #ifndef SERVER_DEFAULT
-#define SERVER_DEFAULT    "[2001:db8::1\%7]:12345"
+#define SERVER_DEFAULT    "[2001:db8::1\%6]:12345"
+//#define SERVER_DEFAULT    "[2001:db8::1\%7]:12345"
 #endif
 
 /**

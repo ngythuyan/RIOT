@@ -7,6 +7,12 @@ CFLAGS += -Wno-unused-parameter
 
 RIOTBASE ?= $(CURDIR)/../../../../..
 
+# Required modules
+USEMODULE += ztimer
+USEMODULE += ztimer_sec
+USEMODULE += ztimer_usec
+USEMODULE += sema_inv
+
 # For UDP
 USEMODULE += sock_udp
 USEMODULE += sock_util
@@ -28,10 +34,11 @@ USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
-
-USEMODULE += sema_inv
-USEMODULE += ztimer_sec
-USEMODULE += ztimer_usec
+USEMODULE += gnrc_rpl_mrhof_etx
+# optional alternative metric, hardware must support it
+#USEMODULE += gnrc_rpl_mrhof_lqi
+# use only when battery connected
+#USEMODULE += gnrc_rpl_mrhof_energy
 
 # Shell
 USEMODULE += shell

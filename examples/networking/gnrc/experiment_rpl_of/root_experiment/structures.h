@@ -34,7 +34,13 @@ typedef struct
 typedef struct {
     uint8_t address[IPV6_U8_ADDR_LEN];
     uint32_t replies;
+    uint32_t sent;
     uint8_t parent_changed;
+    uint32_t avg_rtt;
+    uint16_t avg_etx;
+    uint16_t avg_energy;
+    uint8_t avg_hp;
+    uint8_t avg_rssi;
     bool occupied;
     edge current_parent;
 } node_info;
@@ -54,9 +60,14 @@ uint32_t hash_ipv6(uint8_t addr[]);
  * @brief   saves node info, creates a new node when node not saved yet
  * @return 0 when everything okay, 1 when tree was updated
  */
-uint8_t put_node(ipv6_addr_t addr, uint32_t replies, char parent[], node_info nodes[]);
+uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[]);
 
 /**
  * @brief   prints current topology of network
  */
 void print_tree(node_info *info);
+
+/**
+ * @brief   calculates running average
+ */
+uint32_t running_avg(uint32_t current_average, uint32_t k, uint32_t new_value);

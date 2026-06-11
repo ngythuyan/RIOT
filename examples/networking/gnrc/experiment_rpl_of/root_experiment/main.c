@@ -38,7 +38,7 @@ static bool running;
 static bool first_msg_rcvd = false;
 
 // record data
-static node_info nodes[NUM_OF_NODES];
+static node_info nodes[NODE_MAP_SIZE] = {0};
 
 static void _print_addr(void) 
 {
@@ -68,7 +68,7 @@ static void *_dispatch_thread(void *arg)
         printf("Dispatcher: %s;%ld;%ld;%d;%d;%d;%d\n", 
                address, ping->replies, ping->rtt_last, 
                ping->etx, ping->energy, ping->hp, ping->rssi);
-        if (put_node(payload->address, ping->replies, ping->parent, nodes) == 1)
+        if (put_node(payload->address, ping, nodes) == 1)
         {
             printf("Dispatcher: ");
             print_tree(nodes);
@@ -83,7 +83,6 @@ static void *_dispatch_thread(void *arg)
 static void *_listen_thread(void *ctx)
 {
     (void)ctx;
-//    uint32_t timeout = 3 * delay_us * US_PER_MS;
     static char server_buffer[PACKET_SIZE];
     
     while (running) {
@@ -92,20 +91,6 @@ static void *_listen_thread(void *ctx)
                                 PACKET_SIZE, 
                                 SOCK_NO_TIMEOUT,
                                 &remote);
-        // if (res == -ETIMEDOUT)
-        // {
-        //     if (first_msg_rcvd)
-        //     {
-        //         puts("Listen: no messages received. Listen thread terminates");
-        //         running = false;
-        //         msg_t stop_msg = { .type = MSG_STOP };
-        //         msg_send(&stop_msg, dispatch_pid);
-        //         sema_inv_post(&thread_sync);
-        //         return NULL;
-        //     }
-        //     continue;
-        // }
-        // else if (res < 0) 
         if (res < 0) 
         {
             char address_string[5] = {0};
@@ -141,13 +126,70 @@ static void *_listen_thread(void *ctx)
         }
     }
 
-    // Never reached
-    puts("Listen: listen thread terminates");
+    puts("Listen: Listen thread terminates");
+    running = false;
+    msg_t stop_msg = { .type = MSG_STOP };
+    msg_send(&stop_msg, dispatch_pid);
     sema_inv_post(&thread_sync);
     return NULL;
 }
 
 /* ================= Main ================= */
+static int exp_cmd(int argc, char **argv)
+{
+    if (argc < 2) {
+        uint8_t node_amount = 0;
+        uint8_t avg_parent_change = 0;
+        uint8_t avg_pdr = 0;
+        uint32_t avg_packets = 0;
+        uint64_t total_packets = 0;
+
+        for (int i = 0; i < NODE_MAP_SIZE; i++)
+        {
+            // print Node infos
+            uint8_t pdr = 0;
+            if (nodes[i].sent > 0) 
+            {
+                pdr = (nodes[i].replies / nodes[i].sent) * 100;
+            }
+            // Name;Parent;parent_changed;pdr;average_rtt;avg_etx;avg_rssi,avg_hp;average_energy
+            printf("%s;%s;%d;%d;%ld;%d;%d;%d;%d\n", nodes[i].current_parent.child, 
+                    nodes[i].current_parent.parent, nodes[i].parent_changed, pdr, nodes[i].avg_rtt, 
+                    nodes[i].avg_etx, nodes[i].avg_rssi, nodes[i].avg_hp, nodes[i].avg_energy);
+            // add average values
+            avg_parent_change = running_avg(avg_parent_change, node_amount, nodes[i].parent_changed);
+            avg_pdr = running_avg(avg_pdr, node_amount, pdr);
+            avg_packets = running_avg(avg_packets, node_amount, nodes[i].sent);
+            total_packets = total_packets + nodes[i].sent;
+            node_amount++;
+        }
+        printf("Overall data: Nodes in total: %d \nAverage number of parent changes: %d\n Average PDR: %d\n", 
+                node_amount, avg_parent_change, avg_pdr);
+        printf("In total %lld messages received by server, each node about %ld\n", total_packets, avg_packets);
+        print_tree(nodes);
+    }
+
+    if (strcmp(argv[1], "stop") == 0) {
+        running = false;
+        sema_inv_init(&thread_sync, 2);
+        sema_inv_wait(&thread_sync);
+        sock_udp_close(&sock);
+        memset(dispatch_thread_stack, 0, sizeof(dispatch_thread_stack));
+        memset(listen_thread_stack, 0, sizeof(listen_thread_stack));
+    }
+    else if (strcmp(argv[1], "server") == 0) {
+    }
+    else {
+        puts("error: invalid command");
+    }
+    return 0;
+}
+
+static const shell_command_t shell_commands[] = {
+    {"experiment", "RPL OF experiment", exp_cmd},
+    {NULL, NULL, NULL}
+};
+
 int main(void)
 {
     (void) delay_us;
@@ -203,17 +245,11 @@ int main(void)
                 THREAD_PRIORITY_MAIN - 2, 0,
                 _dispatch_thread, NULL, "Dispatcher");
     puts("Root: Created DIspatcher thread");
-
-    sema_inv_init(&thread_sync, 2);
-    sema_inv_wait(&thread_sync);
-    sock_udp_close(&sock);
-    memset(dispatch_thread_stack, 0, sizeof(dispatch_thread_stack));
-    memset(listen_thread_stack, 0, sizeof(listen_thread_stack));
     
     /* ================= start shell ================= */
     puts("Root: Running Shell");
     char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+    shell_run(shell_commands, line_buf, SHELL_DEFAULT_BUFSIZE);
     
     return 0;
 }
