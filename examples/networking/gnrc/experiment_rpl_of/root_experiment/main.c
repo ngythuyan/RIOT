@@ -37,6 +37,8 @@ static sema_inv_t thread_sync;
 static bool running;
 static bool first_msg_rcvd = false;
 
+static uint32_t initial_time = 0;
+
 // record data
 static node_info nodes[NODE_MAP_SIZE] = {0};
 
@@ -65,9 +67,11 @@ static void *_dispatch_thread(void *arg)
         msg_ping_t *ping = &payload->ping;
         char address[5] = {0};
         ipv6_to_identifier(&payload->address, address);
-        printf("Dispatcher: %s;%ld;%ld;%d;%d;%d;%d\n", 
-               address, ping->replies, ping->rtt_last, 
-               ping->etx, ping->energy, ping->hp, ping->rssi);
+        uint32_t time_now = ztimer_now(ZTIMER_USEC) - initial_time;
+        // Name;time;rtt;etx;energy;hp;rssi
+        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d\n", 
+               address, time_now, ping->rtt_last, ping->etx, 
+               ping->energy, ping->hp, ping->rssi);
         if (put_node(payload->address, ping, nodes) == 1)
         {
             printf("Dispatcher: ");
@@ -85,6 +89,7 @@ static void *_listen_thread(void *ctx)
     (void)ctx;
     static char server_buffer[PACKET_SIZE];
     
+    initial_time = ztimer_now(ZTIMER_USEC);
     while (running) {
         /* receive ping */
         int res = sock_udp_recv(&sock, server_buffer,
@@ -146,24 +151,27 @@ static int exp_cmd(int argc, char **argv)
 
         for (int i = 0; i < NODE_MAP_SIZE; i++)
         {
-            // print Node infos
-            uint8_t pdr = 0;
-            if (nodes[i].sent > 0) 
+            if(nodes[i].occupied)
             {
-                pdr = (nodes[i].replies / nodes[i].sent) * 100;
+                // print Node infos
+                uint8_t pdr = 0;
+                if (nodes[i].sent > 0) 
+                {
+                    pdr = (nodes[i].replies / nodes[i].sent) * 100;
+                }
+                // Name;Parent;parent_changed;pdr;average_rtt;avg_etx;avg_rssi,avg_hp;average_energy
+                printf("%s;%s;%d;%d;%ld;%d;%d;%d;%d\n", nodes[i].current_parent.child, 
+                        nodes[i].current_parent.parent, nodes[i].parent_changed, pdr, nodes[i].avg_rtt, 
+                        nodes[i].avg_etx, nodes[i].avg_rssi, nodes[i].avg_hp, nodes[i].avg_energy);
+                // add average values
+                avg_parent_change = running_avg(avg_parent_change, node_amount, nodes[i].parent_changed);
+                avg_pdr = running_avg(avg_pdr, node_amount, pdr);
+                avg_packets = running_avg(avg_packets, node_amount, nodes[i].sent);
+                total_packets = total_packets + nodes[i].sent;
+                node_amount++;
             }
-            // Name;Parent;parent_changed;pdr;average_rtt;avg_etx;avg_rssi,avg_hp;average_energy
-            printf("%s;%s;%d;%d;%ld;%d;%d;%d;%d\n", nodes[i].current_parent.child, 
-                    nodes[i].current_parent.parent, nodes[i].parent_changed, pdr, nodes[i].avg_rtt, 
-                    nodes[i].avg_etx, nodes[i].avg_rssi, nodes[i].avg_hp, nodes[i].avg_energy);
-            // add average values
-            avg_parent_change = running_avg(avg_parent_change, node_amount, nodes[i].parent_changed);
-            avg_pdr = running_avg(avg_pdr, node_amount, pdr);
-            avg_packets = running_avg(avg_packets, node_amount, nodes[i].sent);
-            total_packets = total_packets + nodes[i].sent;
-            node_amount++;
         }
-        printf("Overall data: Nodes in total: %d \nAverage number of parent changes: %d\n Average PDR: %d\n", 
+        printf("Overall data: \n Nodes in total: %d \nAverage number of parent changes: %d\n Average PDR: %d\n", 
                 node_amount, avg_parent_change, avg_pdr);
         printf("In total %lld messages received by server, each node about %ld\n", total_packets, avg_packets);
         print_tree(nodes);

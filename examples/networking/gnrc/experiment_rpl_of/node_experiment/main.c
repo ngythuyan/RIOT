@@ -118,7 +118,7 @@ static void get_stats(void)
     netstats_nb_t nb_stats;
     netstats_nb_get(&iface->netif, nce.l2addr, nce.l2addr_len, &nb_stats);
 
-    printf("Node: ETX-%d, RSSI-%d, LQI-%d\n", nb_stats.etx, nb_stats.rssi, nb_stats.lqi);
+    printf("Node: %ld -- ETX-%d, RSSI-%d\n", seq_no, nb_stats.etx, nb_stats.rssi);
     ping->etx = nb_stats.etx;
     ping->rssi = nb_stats.rssi;
     return;

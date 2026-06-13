@@ -77,13 +77,13 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
 void print_tree(node_info *info)
 {
     (void) delay_us;
-    printf("CURRENT-TREE");
+    printf("CURRENT-TREE-");
     for(int i = 0; i < NODE_MAP_SIZE; i++)
     {
         node_info node = info[i];
         if (node.occupied)
         {
-            printf("-{%s:%s}", node.current_parent.parent, node.current_parent.child);
+            printf("-%s:%s", node.current_parent.parent, node.current_parent.child);
         }
     }
     printf("\n");
