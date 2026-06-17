@@ -19,14 +19,14 @@
 #include "shell.h"
 #include "structures.h"
 
-#define DISPATCH_QUEUE_SIZE (10)
+#define DISPATCH_QUEUE_SIZE (NUM_OF_PINGS * NUM_OF_NODES)
 #define MSG_STOP 0xFF
 
 static sock_udp_t sock;
 static sock_udp_ep_t remote;
 
-static char listen_thread_stack[THREAD_STACKSIZE_DEFAULT];
-static char dispatch_thread_stack[THREAD_STACKSIZE_DEFAULT];
+static char listen_thread_stack[THREAD_STACKSIZE_MAIN];
+static char dispatch_thread_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE_PRINTF];
 static msg_t dispatch_queue[DISPATCH_QUEUE_SIZE];
 static kernel_pid_t dispatch_pid;
 
@@ -50,28 +50,64 @@ static void _print_addr(void)
     puts("\"]}");
 }
 
+static void _print_data(void)
+{
+    uint8_t node_amount = 0;
+    uint8_t total_parent_change = 0;
+    uint64_t total_sent = 0;
+    uint64_t total_replies = 0;
+
+    for (int i = 0; i < NODE_MAP_SIZE; i++)
+    {
+        if(nodes[i].occupied)
+        {
+            // print Node infos
+            uint8_t pdr = 0;
+            if (nodes[i].sent > 0) 
+            {
+                pdr = (nodes[i].replies / nodes[i].sent) * 100;
+            }
+            // Name;Parent;parent_changed;pdr
+            printf("%s;%s;%d;%d\n", nodes[i].current_parent.child, 
+                    nodes[i].current_parent.parent, nodes[i].parent_changed, pdr);
+            // add average values
+            total_parent_change = total_parent_change + nodes[i].parent_changed;
+            total_replies = total_replies + nodes[i].replies;
+            total_sent = total_sent + nodes[i].sent;
+            node_amount++;
+        }
+    }
+    printf("Total_parent_changes: %d\n", total_parent_change);
+    printf("Total nodes: %d\n", node_amount);
+    printf("PDR: %lld and %lld = %lld\n", total_replies, total_sent, (total_replies / total_sent) * 100);
+    print_tree(nodes);
+}
+
 static void *_dispatch_thread(void *arg)
 {
     (void)arg;
     msg_init_queue(dispatch_queue, DISPATCH_QUEUE_SIZE);
+    bool send_finished = false;
 
     msg_t msg;
-    while (running) {
+    while (!send_finished || msg_avail() > 0) {
         msg_receive(&msg);
 
         if (msg.type == MSG_STOP)
         {
-            break;
+            send_finished = true;
+            continue;
         }
+
         dispatch_payload_t *payload = (dispatch_payload_t *)msg.content.ptr;
         msg_ping_t *ping = &payload->ping;
         char address[5] = {0};
         ipv6_to_identifier(&payload->address, address);
         uint32_t time_now = ztimer_now(ZTIMER_USEC) - initial_time;
-        // Name;time;rtt;etx;energy;hp;rssi
-        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d\n", 
+        // Name;time;rtt;etx;energy;hp;rssi;replies;sent
+        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%ld;%ld\n", 
                address, time_now, ping->rtt_last, ping->etx, 
-               ping->energy, ping->hp, ping->rssi);
+               ping->energy, ping->hp, ping->rssi, ping->replies, ping->msg_no);
         if (put_node(payload->address, ping, nodes) == 1)
         {
             printf("Dispatcher: ");
@@ -80,7 +116,9 @@ static void *_dispatch_thread(void *arg)
         
         free(payload);
     }
+    puts("Dispatch: Dispatch thread terminates");
     sema_inv_post(&thread_sync);
+    _print_data();
     return NULL;
 }
 
@@ -94,9 +132,17 @@ static void *_listen_thread(void *ctx)
         /* receive ping */
         int res = sock_udp_recv(&sock, server_buffer,
                                 PACKET_SIZE, 
-                                SOCK_NO_TIMEOUT,
+                                120 * US_PER_SEC,
                                 &remote);
-        if (res < 0) 
+        if (res == -ETIMEDOUT) {
+            puts("Listen: Listen thread terminates");
+            running = false;
+            msg_t stop_msg = { .type = MSG_STOP };
+            msg_send(&stop_msg, dispatch_pid);
+            sema_inv_post(&thread_sync);
+            return NULL;
+        }
+        else if (res < 0) 
         {
             char address_string[5] = {0};
             ipv6_to_identifier((ipv6_addr_t *)&remote.addr.ipv6, address_string);
@@ -124,8 +170,8 @@ static void *_listen_thread(void *ctx)
 
         msg_t msg;
         msg.content.ptr = copy;
-        if (msg_send(&msg, dispatch_pid) <= 0) {
-            puts("Listen: Dispatch send failed");
+        if (msg_try_send(&msg, dispatch_pid) <= 0) {
+            printf("Listen: Dispatch queue full\n");
             free(copy);
             continue;
         }
@@ -143,41 +189,11 @@ static void *_listen_thread(void *ctx)
 static int exp_cmd(int argc, char **argv)
 {
     if (argc < 2) {
-        uint8_t node_amount = 0;
-        uint8_t avg_parent_change = 0;
-        uint8_t avg_pdr = 0;
-        uint32_t avg_packets = 0;
-        uint64_t total_packets = 0;
-
-        for (int i = 0; i < NODE_MAP_SIZE; i++)
-        {
-            if(nodes[i].occupied)
-            {
-                // print Node infos
-                uint8_t pdr = 0;
-                if (nodes[i].sent > 0) 
-                {
-                    pdr = (nodes[i].replies / nodes[i].sent) * 100;
-                }
-                // Name;Parent;parent_changed;pdr;average_rtt;avg_etx;avg_rssi,avg_hp;average_energy
-                printf("%s;%s;%d;%d;%ld;%d;%d;%d;%d\n", nodes[i].current_parent.child, 
-                        nodes[i].current_parent.parent, nodes[i].parent_changed, pdr, nodes[i].avg_rtt, 
-                        nodes[i].avg_etx, nodes[i].avg_rssi, nodes[i].avg_hp, nodes[i].avg_energy);
-                // add average values
-                avg_parent_change = running_avg(avg_parent_change, node_amount, nodes[i].parent_changed);
-                avg_pdr = running_avg(avg_pdr, node_amount, pdr);
-                avg_packets = running_avg(avg_packets, node_amount, nodes[i].sent);
-                total_packets = total_packets + nodes[i].sent;
-                node_amount++;
-            }
-        }
-        printf("Overall data: \n Nodes in total: %d \nAverage number of parent changes: %d\n Average PDR: %d\n", 
-                node_amount, avg_parent_change, avg_pdr);
-        printf("In total %lld messages received by server, each node about %ld\n", total_packets, avg_packets);
-        print_tree(nodes);
+        _print_data();
     }
 
     if (strcmp(argv[1], "stop") == 0) {
+        printf("Stopping experiment: 3\n");
         running = false;
         sema_inv_init(&thread_sync, 2);
         sema_inv_wait(&thread_sync);
@@ -185,7 +201,13 @@ static int exp_cmd(int argc, char **argv)
         memset(dispatch_thread_stack, 0, sizeof(dispatch_thread_stack));
         memset(listen_thread_stack, 0, sizeof(listen_thread_stack));
     }
-    else if (strcmp(argv[1], "server") == 0) {
+    else if (strcmp(argv[1], "running") == 0) {
+        if (running) {
+            printf("\nExperiment still ongoing: 0\n");
+        }
+        else {
+            printf("\nExperiment stopped: 1\n");
+        }
     }
     else {
         puts("error: invalid command");
@@ -194,7 +216,7 @@ static int exp_cmd(int argc, char **argv)
 }
 
 static const shell_command_t shell_commands[] = {
-    {"experiment", "RPL OF experiment", exp_cmd},
+    {"exp", "RPL OF experiment", exp_cmd},
     {NULL, NULL, NULL}
 };
 
@@ -222,6 +244,7 @@ int main(void)
     gnrc_netif_ipv6_addr_add(netiface, &dodag_id, 64, 0);
 
     _print_addr();
+    printf("\n");
 
     /* init RPL root */
     gnrc_rpl_instance_t *inst = gnrc_rpl_root_init(1, &dodag_id, false, false);

@@ -1,4 +1,4 @@
-APPLICATION = experiment_rpl_of_root
+APPLICATION = experiment_root
 
 # If no BOARD is found in the environment, use this default:
 BOARD ?= feather-nrf52840-sense

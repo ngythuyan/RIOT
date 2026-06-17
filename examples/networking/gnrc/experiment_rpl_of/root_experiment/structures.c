@@ -48,11 +48,15 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
     memcpy(target_slot->address, addr.u8, IPV6_U8_ADDR_LEN);
     target_slot->replies = ping->replies;
     target_slot->sent = ping->msg_no;
-    target_slot->avg_rtt = running_avg(target_slot->avg_rtt, ping->replies, ping->rtt_last);
-    target_slot->avg_etx = running_avg(target_slot->avg_etx, ping->replies, ping->etx);
-    target_slot->avg_hp = running_avg(target_slot->avg_hp, ping->replies, ping->hp);
-    target_slot->avg_rssi = running_avg(target_slot->avg_rssi, ping->replies, ping->rssi);
-    target_slot->avg_energy = running_avg(target_slot->avg_energy, ping->replies, ping->energy);
+
+    if(ping->etx == 0 && ping->rssi == 0) {
+        char name[5];
+        ipv6_to_identifier(&addr, name);
+        printf("Node_last_info: %s\n", name)
+        printf("Sent: %ld\n", ping->msg_no);
+        printf("Received: %ld\n", ping->replies);
+        return 0;
+    }
 
     /* save information parent child relationship */
     if(target_slot->occupied == false)
@@ -62,7 +66,7 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
         ipv6_to_identifier(&addr, target_slot->current_parent.child);
         strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
         target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
-        return 1;
+        return 0;
     }
     else if (strncmp(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN) != 0)
     {

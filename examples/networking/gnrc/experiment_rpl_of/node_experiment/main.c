@@ -19,21 +19,12 @@
 
 #include "macros/utils.h"
 #include "net/utils.h"
+#include "mutex.h"
 
 // for neighbor stats
 #include "net/netstats.h"
 #include "net/netstats/neighbor.h"
 
-void print_rpl_parent(void) {
-    gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(INSTANCE_ID_DEFAULT);
-    if (inst && inst->dodag.parents) {
-        char addr_str[IPV6_ADDR_MAX_STR_LEN];
-        ipv6_addr_to_str(addr_str, &inst->dodag.parents->addr, sizeof(addr_str));
-        printf("RPL parent: %s\n", addr_str);
-    } else {
-        puts("RPL: no parent found");
-    }
-}
 // for battery reading
 #if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
     #include "battery.h"
@@ -46,14 +37,16 @@ void print_rpl_parent(void) {
 static uint32_t seq_no = 0;
 static sock_udp_t sock;
 
-static char send_thread_stack[THREAD_STACKSIZE_DEFAULT];
-static char listen_thread_stack[THREAD_STACKSIZE_DEFAULT];
+static char send_thread_stack[THREAD_STACKSIZE_MAIN + THREAD_EXTRA_STACKSIZE_PRINTF];
+static char listen_thread_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE_PRINTF];
 
 static uint8_t buf_tx[PACKET_SIZE];
 static msg_ping_t *ping = (void *)buf_tx;
 
-static bool running;
+static volatile bool running;
 static sema_inv_t thread_sync;
+static mutex_t mu = MUTEX_INIT;
+
 
 /**
  * @brief   Recordings of time sent of messages
@@ -91,28 +84,46 @@ static void _put_rtt(uint32_t seq)
     record_tx[idx].time_tx_us = now;
 }
 
-static void get_parent(char* parent)
+static int get_parent(char* parent)
 {
+    unsigned state = irq_disable();
     gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(INSTANCE_ID_DEFAULT);
+    if (!inst || !inst->dodag.parents) {
+        irq_restore(state);
+        return - 1;
+    }
     ipv6_addr_t dodag_id = inst->dodag.parents->addr;
+    irq_restore(state);
+
     ipv6_to_identifier(&dodag_id, parent);
+    return 0;
 }
 
-static void get_stats(void)
+static int get_stats(void)
 {
+    unsigned state = irq_disable();
     gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(INSTANCE_ID_DEFAULT);
+    if (!inst || !inst->dodag.parents) {
+        irq_restore(state);
+        return - 1;
+    }
     gnrc_rpl_dodag_t *dodag = &inst->dodag;
+    uint16_t rank = dodag->my_rank;
+    ipv6_addr_t parent_addr = dodag->parents->addr;
+    kernel_pid_t iface_pid = dodag->iface;
+    irq_restore(state);
 
     /* Hop Count*/
-    ping->hp = dodag->my_rank / CONFIG_GNRC_RPL_DEFAULT_MIN_HOP_RANK_INCREASE;
+    ping->hp = rank / CONFIG_GNRC_RPL_DEFAULT_MIN_HOP_RANK_INCREASE;
     
     /* ETX and RSSI */
     gnrc_ipv6_nib_nc_t nce;
-    gnrc_netif_t *iface = gnrc_netif_get_by_pid(dodag->iface);
-    if (gnrc_ipv6_nib_get_next_hop_l2addr(&dodag->parents->addr, iface, NULL, &nce)) {
+    gnrc_netif_t *iface = gnrc_netif_get_by_pid(iface_pid);
+    if (gnrc_ipv6_nib_get_next_hop_l2addr(&parent_addr, iface, NULL, &nce)) {
+        printf("Node: stats not found\n");
         ping->etx = 0;
         ping->rssi = 0;
-        return;
+        return 0;
     }
 
     netstats_nb_t nb_stats;
@@ -121,7 +132,7 @@ static void get_stats(void)
     printf("Node: %ld -- ETX-%d, RSSI-%d\n", seq_no, nb_stats.etx, nb_stats.rssi);
     ping->etx = nb_stats.etx;
     ping->rssi = nb_stats.rssi;
-    return;
+    return 0;
 }
 
 /**
@@ -138,10 +149,14 @@ static void *_listen_thread(void *ctx)
 
     while (running) {
         /* receive pong */
-        int res;
-        if ((res = sock_udp_recv(&sock, buf,
-                                PACKET_SIZE, SOCK_NO_TIMEOUT,
-                                NULL)) < 0) {
+        int res = sock_udp_recv(&sock, buf, PACKET_SIZE, 45 * US_PER_SEC, NULL);
+
+        if (res == -ETIMEDOUT) {
+            puts("Listen: listen thread terminates");
+            sema_inv_post(&thread_sync);
+            return NULL;
+        }
+        else if (res < 0) {
             printf("Listen: Error while receiving: %d\n", res);
             continue;
         }
@@ -150,12 +165,13 @@ static void *_listen_thread(void *ctx)
             continue;
         }
 
+        printf("Listen: pong received %ld\n", pong->msg_no);
         /* calculate RTT and save */
-        unsigned state = irq_disable();
+        mutex_lock(&mu);
         uint32_t rtt = _get_rtt(pong->msg_no);
         ping->rtt_last = rtt;
         ping->replies++;
-        irq_restore(state);
+        mutex_unlock(&mu);
     }
 
     puts("Listen: listen thread terminates");
@@ -175,30 +191,39 @@ static void *_send_thread(void *ctx)
         puts("Send: Unable to parse destination address");
     }
 
-    print_rpl_parent();
-    while (running) {
+    while (seq_no < NUM_OF_PINGS) {
         /* prepare ping message */
-        get_parent(ping->parent);
-        get_stats();
+        mutex_lock(&mu);
+        int res = get_parent(ping->parent);
+        if(res < 0) {
+            mutex_unlock(&mu);
+            ztimer_sleep(ZTIMER_USEC, delay_us);
+            continue;
+        }
+        res = get_stats();
+        if (res < 0) {
+            mutex_unlock(&mu);
+            ztimer_sleep(ZTIMER_USEC, delay_us);
+            continue;
+        }
     #if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
         ping->energy = get_voltage();
     #endif
         ping->msg_no = seq_no;
         _put_rtt(seq_no);
         seq_no++;
+        msg_ping_t local_ping = *ping;
+        mutex_unlock(&mu);
 
         /* send UDP msg */
-        int res;
-        if((res = sock_udp_send(&sock, ping, PACKET_SIZE, &remote)) < 0) {
+        if((res = sock_udp_send(&sock, &local_ping, PACKET_SIZE, &remote)) < 0) {
             puts("Send: could not send");
-            continue;
         }
         ztimer_sleep(ZTIMER_USEC, delay_us);
     }
 
     puts("Send: sending thread terminates");
     sema_inv_post(&thread_sync);
-
     return NULL;
 }
 
@@ -216,13 +241,19 @@ int main(void)
     }
     printf("Node: Network interface PID: %d\n", netif->pid);
 
-//    puts("Node: Waiting for root");
-//    ztimer_sleep(ZTIMER_SEC, 30);
     puts("Node: Starting experiment"); 
 
     /* init RPL */
     gnrc_rpl_init(netif->pid);
-    ztimer_sleep(ZTIMER_SEC, 2);
+    puts("Node: Wait for parent");
+    while (true) {
+        gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(INSTANCE_ID_DEFAULT);
+        if (inst && inst->dodag.parents) {
+            break;
+        }
+        ztimer_sleep(ZTIMER_SEC, 1);
+    }
+    puts("Node: parent found, starting experiment");
 
     /* UDP setup */
     sock_udp_ep_t local = { .family = AF_INET6,
@@ -240,6 +271,7 @@ int main(void)
     puts("Node: RPL and UDP setup finished");
     _print_addr();
 
+    sema_inv_init(&thread_sync, 2);
     /* ================= setup listen thread ================= */
     running = true;
     thread_create(listen_thread_stack, sizeof(listen_thread_stack),
@@ -254,15 +286,20 @@ int main(void)
    puts("Node: Created sending thread");
 
    /* ================= End of experiment ================= */
-   while(seq_no < NUM_OF_PINGS) 
-   {
-    continue;
-   }
-
-   sema_inv_init(&thread_sync, 2);
-   running = false;
 
    sema_inv_wait(&thread_sync);
+
+   /* send last message*/
+    if (sock_udp_str2ep(&remote, SERVER_DEFAULT) < 0) {
+        puts("Send: Unable to parse destination address");
+    }
+    ping->rssi = 0;
+    ping->etx = 0;
+    if((sock_udp_send(&sock, &ping, PACKET_SIZE, &remote)) < 0) {
+        puts("Send: could not send");
+    }
+    printf("Sent last message\n");
+
    sock_udp_close(&sock);
    memset(send_thread_stack, 0, sizeof(send_thread_stack));
    memset(listen_thread_stack, 0, sizeof(listen_thread_stack));

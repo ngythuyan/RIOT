@@ -1,4 +1,4 @@
-APPLICATION = experiment_rpl_of_node
+APPLICATION = experiment_node
 
 # If no BOARD is found in the environment, use this default:
 BOARD ?= feather-nrf52840-sense
@@ -46,12 +46,12 @@ USEMODULE += gnrc_rpl_mrhof_etx
 #USEMODULE += gnrc_rpl_mrhof_energy
 
 # Battery
-FEATURES_REQUIRED += periph_adc
-CFLAGS += -DADC_BATTERY_LINE=ADC_LINE\(5\)
+#FEATURES_REQUIRED += periph_adc
+#CFLAGS += -DADC_BATTERY_LINE=ADC_LINE\(5\)
 
 # in case border router is up
 CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CHANNEL=15
-
+#CLFAGS += DDEVELHELP = 1
 #extra modules
 SRC += main.c
 SRC += experiment.c

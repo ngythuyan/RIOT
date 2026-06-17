@@ -36,11 +36,6 @@ typedef struct {
     uint32_t replies;
     uint32_t sent;
     uint8_t parent_changed;
-    uint32_t avg_rtt;
-    uint16_t avg_etx;
-    uint16_t avg_energy;
-    uint8_t avg_hp;
-    uint8_t avg_rssi;
     bool occupied;
     edge current_parent;
 } node_info;

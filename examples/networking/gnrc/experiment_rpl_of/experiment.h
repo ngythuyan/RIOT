@@ -54,7 +54,7 @@ static uint32_t delay_us = US_PER_SEC;
 
 /* Size of network */
 #ifndef NUM_OF_NODES
-#define NUM_OF_NODES  (20)
+#define NUM_OF_NODES  (10)
 #endif
 
 /* Packet Size */
@@ -96,7 +96,7 @@ static uint32_t delay_us = US_PER_SEC;
  * @brief   Default address, iface, port of server
  */
 #ifndef SERVER_DEFAULT
-#define SERVER_DEFAULT    "[2001:db8::1\%6]:12345"
+#define SERVER_DEFAULT    "[2001:db8::1\%6]:12345"  // for Fit IoT-Lab
 //#define SERVER_DEFAULT    "[2001:db8::1\%7]:12345"
 #endif
 

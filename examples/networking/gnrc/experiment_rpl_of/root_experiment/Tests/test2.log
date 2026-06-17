@@ -1,0 +1,383 @@
+Script started on 2026-06-16 21:26:04+02:00 [TERM="xterm-256color" TTY="/dev/pts/0" COLUMNS="140" LINES="76"]
+[1;32mBuilding application "experiment_rpl_of_root" for "iotlab-m3" with CPU "stm32".[0m
+
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/pkg/cmsis/ 
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/pkg/mpaland-printf/ 
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/build/pkg/mpaland-printf -f /home/tin/Desktop/RIOT_CODE/RIOT/pkg/mpaland-printf/mpaland-printf.mk
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/boards
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/boards/common/init
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/boards/iotlab-m3
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/boards/common/iotlab
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/core
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/core/lib
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/cpu/stm32
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/cpu/cortexm_common
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/cpu/cortexm_common/periph
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/cpu/stm32/periph
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/cpu/stm32/stmclk
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/cpu/stm32/vectors
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/drivers
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/drivers/at86rf2xx
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/drivers/netdev
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/drivers/periph_common
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/auto_init
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/div
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/event
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/evtimer
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/fmt
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/frac
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/iolist
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/isrpipe
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/libc
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/luid
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/malloc_thread_safe
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/crosslayer/inet_csum
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/netapi
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/netif
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/netif/hdr
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/netif/ieee802154
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/netif/init_devs
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/netreg
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/icmpv6
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/ipv6
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/ipv6/hdr
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/ipv6/nib
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/ndp
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan/ctx
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan/frag
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan/frag/fb
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan/frag/rb
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan/iphc
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/network_layer/sixlowpan/nd
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/pkt
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/pktbuf
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/pktbuf_static
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/pktdump
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/routing/rpl
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/sock
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/sock/udp
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/gnrc/transport_layer/udp
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/link_layer/eui_provider
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/link_layer/ieee802154
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/link_layer/l2util
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/netif
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/netstats
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/netutils
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/network_layer/icmpv6
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/network_layer/ipv6/addr
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/network_layer/ipv6/hdr
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/network_layer/sixlowpan
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/sock
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/sock/async/event
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/net/transport_layer/udp
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/newlib_syscalls_default
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/od
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/pm_layered
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/posix/inet
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/preprocessor
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/random
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/sema_inv
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/shell
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/shell/cmds
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/stdio
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/stdio_uart
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/trickle
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/tsrb
+"make" -C /home/tin/Desktop/RIOT_CODE/RIOT/sys/ztimer
+   text	   data	    bss	    dec	    hex	filename
+  89228	    216	  22564	 112008	  1b588	/home/tin/Desktop/RIOT_CODE/RIOT/examples/networking/gnrc/experiment_rpl_of/root_experiment/bin/iotlab-m3/experiment_rpl_of_root.elf
+iotlab-node --jmespath='keys(@)[0]' --format='lambda ret: exit(int(ret))'  --list lille,m3,172 --flash /home/tin/Desktop/RIOT_CODE/RIOT/examples/networking/gnrc/experiment_rpl_of/root_experiment/bin/iotlab-m3/experiment_rpl_of_root.bin
+ssh -t thunguye@lille.iot-lab.info 'socat - tcp:m3-172.lille.iot-lab.info:20000' 
+Root: Network interface PID: 6
+Root: {"IPv6 addresses": ["fe80::e426:5282:3663:3237", "2001:db8::1"]}
+Root: Created listening thread
+Root: Created DIspatcher thread
+Root: Running Shell
+> Dispatcher:CBB8;5645112;0;256;0;2;196
+Dispatcher: CURRENT-TREE--3237:CBB8
+Dispatcher:CBB8;6654854;23058;256;0;2;196
+Dispatcher:CBB8;7661728;24956;256;0;2;196
+Dispatcher:CBB8;8671793;24935;256;0;2;196
+Dispatcher:CBB8;9680606;28134;256;0;2;196
+Dispatcher:CBB8;10686197;27847;256;0;2;196
+Dispatcher:CBB8;11693715;24317;256;0;2;196
+Dispatcher:CBB8;12704115;24300;256;0;2;196
+Dispatcher:CBB8;13708762;28791;256;0;2;196
+Dispatcher:CBB8;14716246;23042;256;0;2;196
+Dispatcher:CBB8;15730034;25580;256;0;2;196
+Dispatcher:CBB8;16739159;32150;256;0;2;196
+Dispatcher:4D53;19218225;0;256;0;2;204
+Dispatcher: CURRENT-TREE--3237:4D53-3237:CBB8
+Dispatcher:4D53;20229738;23700;256;0;2;204
+Dispatcher:4D53;21240464;28353;256;0;2;204
+Dispatcher:4D53;22244776;26889;256;0;2;204
+Dispatcher:E83D;22526794;0;256;0;2;200
+Dispatcher: CURRENT-TREE--3237:E83D-3237:4D53-3237:CBB8
+Dispatcher:4D53;23254229;23703;256;0;2;204
+Dispatcher:E83D;23535928;35998;256;0;2;200
+Dispatcher:4D53;24262691;25308;256;0;2;204
+Dispatcher:E83D;24544068;39520;256;0;2;200
+Dispatcher:4D53;25271185;27834;256;0;2;204
+Dispatcher:E83D;25549358;39508;256;0;2;200
+Dispatcher:4D53;26276487;27895;256;0;2;204
+Dispatcher:E83D;26557835;38549;256;0;2;200
+Dispatcher:4D53;27284323;24986;256;0;2;204
+Dispatcher:E83D;27566297;35389;256;0;2;200
+Dispatcher:4D53;28291535;23090;256;0;2;204
+Dispatcher:E83D;28575537;35389;256;0;2;200
+Dispatcher:3729;28834862;0;256;0;2;201
+Dispatcher: CURRENT-TREE--3237:E83D-3237:3729-3237:4D53-3237:CBB8
+Dispatcher:4D53;29300303;24054;256;0;2;204
+Dispatcher:E83D;29582427;39968;256;0;2;200
+Dispatcher:3729;29843355;27209;256;0;2;201
+Dispatcher:4D53;30311421;24286;256;0;2;204
+Dispatcher:E83D;30604148;36970;256;0;2;200
+Dispatcher:3729;30850216;28829;256;0;2;201
+Dispatcher:4D53;31316723;30112;256;0;2;204
+Dispatcher:E83D;31605318;51943;256;0;2;200
+Dispatcher:3729;31861593;24956;256;0;2;201
+Dispatcher:4D53;32325552;25311;256;0;2;204
+Dispatcher:E83D;32612192;42841;256;0;2;200
+Dispatcher:3729;32865919;28188;256;0;2;201
+Dispatcher:4D53;33333099;26272;256;0;2;204
+Dispatcher:E83D;33621968;38212;256;0;2;200
+Dispatcher:3729;33874077;24346;256;0;2;201
+Dispatcher:4D53;34341255;24661;256;0;2;204
+Dispatcher:E83D;34636608;41102;256;0;2;200
+Dispatcher:3729;34880937;24995;256;0;2;201
+Dispatcher:4D53;35352154;25293;256;0;2;204
+Dispatcher:E83D;35643835;47249;256;0;2;200
+Dispatcher:3729;35891017;24027;256;0;2;201
+Dispatcher:4D53;36358302;28966;256;0;2;204
+Dispatcher:E83D;36651670;40766;256;0;2;200
+Dispatcher:3729;36899493;28498;256;0;2;201
+Dispatcher:4D53;37365177;26296;256;0;2;204
+Dispatcher:E83D;37666115;36645;256;0;2;200
+Dispatcher:3729;37904447;26908;256;0;2;201
+Dispatcher:4D53;38382688;24013;256;0;2;204
+Dispatcher:E83D;38673646;45127;256;0;2;200
+Dispatcher:3729;38914678;24033;256;0;2;201
+Dispatcher:4D53;39381568;35271;256;0;2;204
+Dispatcher:E83D;39684060;40278;256;0;2;200
+Dispatcher:3729;39924453;26707;256;0;2;201
+Dispatcher:4D53;40387832;25008;256;0;2;204
+Dispatcher:E83D;40693516;41417;256;0;2;200
+Dispatcher:3729;40934869;25932;256;0;2;201
+Dispatcher:4D53;41397912;24029;256;0;2;204
+Dispatcher:E83D;41699797;42062;256;0;2;200
+Dispatcher:3729;41948671;30096;256;0;2;201
+Dispatcher:4D53;42406084;26568;256;0;2;204
+Dispatcher:E83D;42706030;45439;256;0;2;200
+Dispatcher:3729;42955866;32518;256;0;2;201
+Dispatcher:4D53;43416194;25293;256;0;2;204
+Dispatcher:E83D;43723663;38238;256;0;2;200
+Dispatcher:3729;43965000;24960;256;0;2;201
+Dispatcher:4D53;44423434;27224;256;0;2;204
+Dispatcher:E83D;44732156;49302;256;0;2;200
+Dispatcher:3729;44974150;25292;256;0;2;201
+Dispatcher:4D53;45432265;24345;256;0;2;204
+Dispatcher:E83D;45740344;42845;256;0;2;200
+Dispatcher:3729;45978826;28178;256;0;2;201
+Dispatcher:4D53;46441076;27250;256;0;2;204
+Dispatcher:E83D;46748333;37307;256;0;2;200
+Dispatcher:3729;46986328;23731;256;0;2;201
+Dispatcher:4D53;47445725;27561;256;0;2;204
+Dispatcher:E83D;47754246;38376;256;0;2;200
+Dispatcher:3729;48004494;23048;256;0;2;201
+Dispatcher:4D53;48454232;23712;256;0;2;204
+Dispatcher:E83D;48763700;34403;256;0;2;200
+Dispatcher:3729;49010760;35910;256;0;2;201
+Dispatcher:4D53;49466693;24351;256;0;2;204
+Dispatcher:E83D;49780250;39826;256;0;2;200
+Dispatcher:3729;50020870;25306;256;0;2;201
+Dispatcher:4D53;50477780;31178;256;0;2;204
+Dispatcher:E83D;50785874;47238;256;0;2;200
+Dispatcher:3729;51034991;27560;256;0;2;201
+Dispatcher:4D53;51484045;27231;256;0;2;204
+Dispatcher:E83D;51795344;37920;256;0;2;200
+Dispatcher:3729;52042845;34146;256;0;2;201
+Dispatcher:4D53;52494567;24993;256;0;2;204
+Dispatcher:E83D;52813281;36955;256;0;2;200
+Dispatcher:3729;53051017;25942;256;0;2;201
+Dispatcher:4D53;53506921;27654;256;0;2;204
+Dispatcher:E83D;53821484;53280;256;0;2;200
+Dispatcher:3729;54065064;25956;256;0;2;201
+Dispatcher:4D53;54514773;30118;256;0;2;204
+Dispatcher:E83D;54827092;48086;256;0;2;200
+Dispatcher:3729;55073891;31491;256;0;2;201
+Dispatcher:4D53;55525004;28185;256;0;2;204
+Dispatcher:E83D;55837188;36974;256;0;2;200
+Dispatcher:3729;56083652;27214;256;0;2;201
+Dispatcher:4D53;56534457;28624;256;0;2;204
+Dispatcher:E83D;56845650;38243;256;0;2;200
+Dispatcher:3729;57094957;29453;256;0;2;201
+Dispatcher:4D53;57540419;27842;256;0;2;204
+Dispatcher:E83D;57849671;46364;256;0;2;200
+Dispatcher:3729;58098104;30959;256;0;2;201
+Dispatcher:4D53;58551627;25306;256;0;2;204
+Dispatcher:E83D;58868480;36955;256;0;2;200
+Dispatcher:3729;59105637;25620;256;0;2;201
+Dispatcher:4D53;59560120;28966;256;0;2;204
+Dispatcher:E83D;59874729;49824;256;0;2;200
+Dispatcher:3729;60120538;24652;256;0;2;201
+Dispatcher:4D53;60572136;23711;256;0;2;204
+Dispatcher:E83D;60883847;38248;256;0;2;200
+Dispatcher:3729;61126803;33308;256;0;2;201
+Dispatcher:4D53;61581729;27541;256;0;2;204
+Dispatcher:E83D;61896324;42067;256;0;2;200
+Dispatcher:3729;62136273;23385;256;0;2;201
+Dispatcher:4D53;62590238;29576;256;0;2;204
+Dispatcher:E83D;62906083;45749;256;0;2;200
+Dispatcher:3729;63150518;27860;256;0;2;201
+Dispatcher:4D53;63600668;27216;256;0;2;204
+Dispatcher:E83D;63911707;48385;256;0;2;200
+Dispatcher:3729;64156141;34262;256;0;2;201
+Dispatcher:4D53;64610228;27863;256;0;2;204
+Dispatcher:E83D;64919223;36641;256;0;2;200
+Dispatcher:3729;65166239;23083;256;0;2;201
+Dispatcher:4D53;65619073;27670;256;0;2;204
+Dispatcher:E83D;65928358;41113;256;0;2;200
+Dispatcher:3729;66181063;25308;256;0;2;201
+Dispatcher:4D53;66628832;24995;256;0;2;204
+Dispatcher:E83D;66938133;37279;256;0;2;200
+Dispatcher:3729;67190197;32595;256;0;2;201
+Dispatcher:4D53;67643231;26893;256;0;2;204
+Dispatcher:E83D;67945723;43341;256;0;2;200
+Dispatcher:3729;68198046;24975;256;0;2;201
+Dispatcher:4D53;68649829;31835;256;0;2;204
+Dispatcher:E83D;68954552;37649;256;0;2;200
+Dispatcher:3729;69206555;24331;256;0;2;201
+Dispatcher:4D53;69655118;26285;256;0;2;204
+Dispatcher:E83D;69963685;35075;256;0;2;200
+Dispatcher:3729;70213767;26909;256;0;2;201
+Dispatcher:4D53;70663276;23694;256;0;2;204
+Dispatcher:3729;71218752;25934;256;0;2;201
+Dispatcher:4D53;71671192;23995;256;0;2;204
+Dispatcher:E83D;71979087;39182;256;0;2;200
+Dispatcher:3729;72235255;22108;256;0;2;201
+Dispatcher:4D53;72679989;25640;256;0;2;204
+Dispatcher:E83D;72988527;37623;256;0;2;200
+Dispatcher:3729;73246939;32686;256;0;2;201
+Dispatcher:4D53;73693121;26913;256;0;2;204
+Dispatcher:E83D;74001681;39855;256;0;2;200
+Dispatcher:3729;74253200;29151;256;0;2;201
+Dispatcher:4D53;74698286;29922;256;0;2;204
+Dispatcher:E83D;75001361;51997;256;0;2;200
+Dispatcher:3729;75265644;26589;256;0;2;201
+Dispatcher:4D53;75706459;27246;256;0;2;204
+Dispatcher:E83D;76011471;40172;256;0;2;200
+Dispatcher:3729;76276718;31496;256;0;2;201
+Dispatcher:4D53;76714311;27545;256;0;2;204
+Dispatcher:E83D;77018346;41445;256;0;2;200
+Dispatcher:3729;77282662;28516;256;0;2;201
+Dispatcher:4D53;77720271;27545;256;0;2;204
+Dispatcher:E83D;78027800;42533;256;0;2;200
+Dispatcher:3729;78293976;24988;256;0;2;201
+Dispatcher:4D53;78724949;24992;256;0;2;204
+Dispatcher:E83D;79033409;40162;256;0;2;200
+Dispatcher:3729;79301824;29409;256;0;2;201
+Dispatcher:4D53;79742424;21503;256;0;2;204
+Dispatcher:E83D;80036447;34734;256;0;2;200
+Dispatcher:3729;80310637;26573;256;0;2;201
+Dispatcher:4D53;80742589;33980;256;0;2;204
+Dispatcher:E83D;81051708;34734;256;0;2;200
+Dispatcher:3729;81326993;25624;256;0;2;201
+Dispatcher:4D53;81749175;26901;256;0;2;204
+Dispatcher:E83D;82059560;38915;256;0;2;200
+Dispatcher:3729;82334862;35712;256;0;2;201
+Dispatcher:4D53;82755441;24659;256;0;2;204
+Dispatcher:E83D;83064207;39217;256;0;2;200
+Dispatcher:3729;83343659;26579;256;0;2;201
+Dispatcher:4D53;83763949;23404;256;0;2;204
+Dispatcher:E83D;84073021;33774;256;0;2;200
+Dispatcher:3729;84352472;27522;256;0;2;201
+Dispatcher:4D53;84772123;24042;256;0;2;204
+Dispatcher:E83D;85082459;37619;256;0;2;200
+Dispatcher:3729;85360982;28821;256;0;2;201
+Dispatcher:4D53;85781272;26261;256;0;2;204
+Dispatcher:E83D;86088084;39191;256;0;2;200
+Dispatcher:3729;86367887;27856;256;0;2;201
+Dispatcher:4D53;86787217;25960;256;0;2;204
+Dispatcher:E83D;87099140;35683;256;0;2;200
+Dispatcher:3729;87382500;26904;256;0;2;201
+Dispatcher:4D53;87797434;24032;256;0;2;204
+Dispatcher:E83D;88115507;41441;256;0;2;200
+Dispatcher:3729;88390045;33360;256;0;2;201
+Dispatcher:4D53;88807529;26709;256;0;2;204
+Dispatcher:E83D;89124640;48656;256;0;2;200
+Dispatcher:3729;89396312;26601;256;0;2;201
+Dispatcher:4D53;89814435;27218;256;0;2;204
+Dispatcher:E83D;90133775;50573;256;0;2;200
+Dispatcher:3729;90412997;23085;256;0;2;201
+Dispatcher:4D53;90823583;24976;256;0;2;204
+Dispatcher:E83D;91141002;39836;256;0;2;200
+Dispatcher:3729;91423412;34457;256;0;2;201
+Dispatcher:4D53;91832108;26884;256;0;2;204
+Dispatcher:E83D;92147556;40529;256;0;2;200
+Dispatcher:3729;92430320;28838;256;0;2;201
+Dispatcher:4D53;92839944;26915;256;0;2;204
+Dispatcher:E83D;93156064;35991;256;0;2;200
+Dispatcher:3729;93439117;25951;256;0;2;201
+Dispatcher:4D53;93852100;26565;256;0;2;204
+Dispatcher:E83D;94171653;37282;256;0;2;200
+Dispatcher:3729;94447000;26567;256;0;2;201
+Dispatcher:4D53;94857602;29916;256;0;2;204
+Dispatcher:E83D;95180450;44727;256;0;2;200
+Dispatcher:3729;95458377;24041;256;0;2;201
+Dispatcher:4D53;95867391;26263;256;0;2;204
+Dispatcher:E83D;96185434;49827;256;0;2;200
+Dispatcher:3729;96468610;27221;256;0;2;201
+Dispatcher:4D53;96874939;27869;256;0;2;204
+Dispatcher:E83D;97200489;36343;256;0;2;200
+Dispatcher:3729;97475501;28972;256;0;2;201
+Dispatcher:4D53;97880899;27246;256;0;2;204
+Dispatcher:E83D;98208965;42254;256;0;2;200
+Dispatcher:3729;98482406;23695;256;0;2;201
+Dispatcher:4D53;98888110;23101;256;0;2;204
+Dispatcher:E83D;99217153;38244;256;0;2;200
+Dispatcher:3729;99492303;23074;256;0;2;201
+Dispatcher:4D53;99904355;23707;256;0;2;204
+Dispatcher:E83D;100234162;36678;256;0;2;200
+Dispatcher:3729;100498768;28312;256;0;2;201
+Dispatcher:4D53;100908332;33049;256;0;2;204
+Dispatcher:E83D;101242959;46445;256;0;2;200
+Dispatcher:3729;101505017;24992;256;0;2;201
+Dispatcher:4D53;101912339;30116;256;0;2;204
+Dispatcher:E83D;102250491;48719;256;0;2;200
+Dispatcher:3729;102527350;23693;256;0;2;201
+Dispatcher:4D53;102920862;23055;256;0;2;204
+Dispatcher:E83D;103258999;40462;256;0;2;200
+Dispatcher:3729;103521393;37849;256;0;2;201
+Dispatcher:4D53;103929050;25308;256;0;2;204
+Dispatcher:E83D;104267172;39856;256;0;2;200
+Dispatcher:3729;104528605;25014;256;0;2;201
+Dispatcher:4D53;104938824;25953;256;0;2;204
+Dispatcher:E83D;105275666;37313;256;0;2;200
+Dispatcher:3729;105543015;23717;256;0;2;201
+Dispatcher:4D53;105947348;27239;256;0;2;204
+Dispatcher:E83D;106285196;42088;256;0;2;200
+Dispatcher:3729;106544965;31837;256;0;2;201
+Dispatcher:4D53;106957444;25669;256;0;2;204
+Dispatcher:E83D;107292102;39310;256;0;2;200
+Dispatcher:3729;107554756;25939;256;0;2;201
+Dispatcher:4D53;107963084;27885;256;0;2;204
+Dispatcher:E83D;108302196;34755;256;0;2;200
+Dispatcher:3729;108560365;29161;256;0;2;201
+Dispatcher:4D53;108972538;25023;256;0;2;204
+Dispatcher:E83D;109315496;38904;256;0;2;200
+Dispatcher:3729;109566646;30902;256;0;2;201
+Dispatcher:4D53;109979123;27245;256;0;2;204
+Dispatcher:E83D;110323349;45943;256;0;2;200
+Dispatcher:3729;110573200;23750;256;0;2;201
+Dispatcher:4D53;110987632;24055;256;0;2;204
+Dispatcher:3729;111582030;24990;256;0;2;201
+Dispatcher:4D53;111998368;25646;256;0;2;204
+Dispatcher:3729;112587654;26290;256;0;2;201
+Dispatcher:4D53;113003703;29145;256;0;2;204
+^CConnection to lille.iot-lab.info closed.
+make: *** [/home/tin/Desktop/RIOT_CODE/RIOT/examples/networking/gnrc/experiment_rpl_of/root_experiment/../../../../../Makefile.include:870: term] Error 130
+
+Script done on 2026-06-16 21:34:02+02:00 [COMMAND_EXIT_CODE="2"]
