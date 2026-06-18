@@ -147,9 +147,10 @@ static void *_listen_thread(void *ctx)
     static uint8_t buf[PACKET_SIZE];
     msg_pong_t *pong = (void *)buf;
 
+    uint32_t timeout = 45 * US_PER_SEC;
     while (running) {
         /* receive pong */
-        int res = sock_udp_recv(&sock, buf, PACKET_SIZE, 45 * US_PER_SEC, NULL);
+        int res = sock_udp_recv(&sock, buf, PACKET_SIZE, timeout, NULL);
 
         if (res == -ETIMEDOUT) {
             puts("Listen: listen thread terminates");
@@ -289,16 +290,16 @@ int main(void)
 
    sema_inv_wait(&thread_sync);
 
-   /* send last message*/
+   /* send last message until success*/
     if (sock_udp_str2ep(&remote, SERVER_DEFAULT) < 0) {
         puts("Send: Unable to parse destination address");
     }
     ping->rssi = 0;
     ping->etx = 0;
-    if((sock_udp_send(&sock, &ping, PACKET_SIZE, &remote)) < 0) {
-        puts("Send: could not send");
+    while ((sock_udp_send(&sock, ping, PACKET_SIZE, &remote)) < 0) {
+        puts("Send: could not send. Try again.");
     }
-    printf("Sent last message\n");
+    printf("Sent last message: %ld-%ld\n", ping->msg_no, ping->replies);
 
    sock_udp_close(&sock);
    memset(send_thread_stack, 0, sizeof(send_thread_stack));

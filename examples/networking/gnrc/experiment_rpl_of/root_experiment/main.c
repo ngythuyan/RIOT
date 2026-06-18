@@ -56,7 +56,7 @@ static void _print_data(void)
     uint8_t total_parent_change = 0;
     uint64_t total_sent = 0;
     uint64_t total_replies = 0;
-
+    printf("Summary:\n");
     for (int i = 0; i < NODE_MAP_SIZE; i++)
     {
         if(nodes[i].occupied)
@@ -86,6 +86,7 @@ static void _print_data(void)
 static void *_dispatch_thread(void *arg)
 {
     (void)arg;
+    initial_time = ztimer_now(ZTIMER_USEC);
     msg_init_queue(dispatch_queue, DISPATCH_QUEUE_SIZE);
     bool send_finished = false;
 
@@ -104,6 +105,13 @@ static void *_dispatch_thread(void *arg)
         char address[5] = {0};
         ipv6_to_identifier(&payload->address, address);
         uint32_t time_now = ztimer_now(ZTIMER_USEC) - initial_time;
+
+        if(ping->etx == 0 && ping->rssi == 0) {
+            printf("Node_last_info:%s;%ld;%ld\n", address, ping->msg_no, ping->replies);
+            free(payload);
+            continue;
+        }
+
         // Name;time;rtt;etx;energy;hp;rssi;replies;sent
         printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%ld;%ld\n", 
                address, time_now, ping->rtt_last, ping->etx, 
@@ -126,13 +134,13 @@ static void *_listen_thread(void *ctx)
 {
     (void)ctx;
     static char server_buffer[PACKET_SIZE];
+    uint32_t timeout = 120 * US_PER_SEC;
     
-    initial_time = ztimer_now(ZTIMER_USEC);
     while (running) {
         /* receive ping */
         int res = sock_udp_recv(&sock, server_buffer,
                                 PACKET_SIZE, 
-                                120 * US_PER_SEC,
+                                timeout,
                                 &remote);
         if (res == -ETIMEDOUT) {
             puts("Listen: Listen thread terminates");
@@ -177,6 +185,7 @@ static void *_listen_thread(void *ctx)
         }
     }
 
+    /* Never reached */
     puts("Listen: Listen thread terminates");
     running = false;
     msg_t stop_msg = { .type = MSG_STOP };
@@ -193,7 +202,7 @@ static int exp_cmd(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "stop") == 0) {
-        printf("Stopping experiment: 3\n");
+        printf("Stopping experiment: %d\n", 3);
         running = false;
         sema_inv_init(&thread_sync, 2);
         sema_inv_wait(&thread_sync);
@@ -203,10 +212,10 @@ static int exp_cmd(int argc, char **argv)
     }
     else if (strcmp(argv[1], "running") == 0) {
         if (running) {
-            printf("\nExperiment still ongoing: 0\n");
+            printf("\nExperiment still ongoing: %d\n", 0);
         }
         else {
-            printf("\nExperiment stopped: 1\n");
+            printf("\nExperiment stopped: %d\n", 1);
         }
     }
     else {

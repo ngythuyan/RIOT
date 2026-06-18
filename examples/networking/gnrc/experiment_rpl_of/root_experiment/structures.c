@@ -49,15 +49,6 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
     target_slot->replies = ping->replies;
     target_slot->sent = ping->msg_no;
 
-    if(ping->etx == 0 && ping->rssi == 0) {
-        char name[5];
-        ipv6_to_identifier(&addr, name);
-        printf("Node_last_info: %s\n", name)
-        printf("Sent: %ld\n", ping->msg_no);
-        printf("Received: %ld\n", ping->replies);
-        return 0;
-    }
-
     /* save information parent child relationship */
     if(target_slot->occupied == false)
     {
