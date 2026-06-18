@@ -116,11 +116,12 @@ typedef struct {
     uint32_t msg_no;    /**< message number */
     uint32_t replies;   /**< number of replies received from server    */
     uint32_t rtt_last;  /**< round trip time of the last packet        */
+    uint16_t etx;        /**< etx of node */
+    uint16_t energy;     /**< energy of node */
+    uint8_t hp;         /**< hp of node */
+    uint8_t rssi;       /**< rssi of node */
+    uint32_t time_passed; /**< time since start of experiment (measured by node) */
     char parent[IPV6_CUSTOM_ADDR_STR_LEN];    /**< parent of node */
-    uint16_t etx;        /**< variable length payload */
-    uint16_t energy;     /**< variable length payload */
-    uint8_t hp;         /**< variable length payload */
-    uint8_t rssi;       /**< variable length payload */
 } msg_ping_t;
 /** @} */
 

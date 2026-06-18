@@ -42,6 +42,7 @@ static char listen_thread_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZ
 
 static uint8_t buf_tx[PACKET_SIZE];
 static msg_ping_t *ping = (void *)buf_tx;
+static uint32_t initial_time;
 
 static volatile bool running;
 static sema_inv_t thread_sync;
@@ -147,7 +148,7 @@ static void *_listen_thread(void *ctx)
     static uint8_t buf[PACKET_SIZE];
     msg_pong_t *pong = (void *)buf;
 
-    uint32_t timeout = 45 * US_PER_SEC;
+    uint32_t timeout = (NUM_OF_PINGS * delay_us) +  (45 * US_PER_SEC);
     while (running) {
         /* receive pong */
         int res = sock_udp_recv(&sock, buf, PACKET_SIZE, timeout, NULL);
@@ -192,6 +193,8 @@ static void *_send_thread(void *ctx)
         puts("Send: Unable to parse destination address");
     }
 
+    initial_time = ztimer_now(ZTIMER_MSEC);
+
     while (seq_no < NUM_OF_PINGS) {
         /* prepare ping message */
         mutex_lock(&mu);
@@ -213,6 +216,7 @@ static void *_send_thread(void *ctx)
         ping->msg_no = seq_no;
         _put_rtt(seq_no);
         seq_no++;
+        ping->time_passed = ztimer_now(ZTIMER_MSEC) - initial_time;
         msg_ping_t local_ping = *ping;
         mutex_unlock(&mu);
 
@@ -248,6 +252,7 @@ int main(void)
     gnrc_rpl_init(netif->pid);
     puts("Node: Wait for parent");
     while (true) {
+        printf("Node: waiting for parent\n");
         gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(INSTANCE_ID_DEFAULT);
         if (inst && inst->dodag.parents) {
             break;
@@ -296,8 +301,9 @@ int main(void)
     }
     ping->rssi = 0;
     ping->etx = 0;
-    while ((sock_udp_send(&sock, ping, PACKET_SIZE, &remote)) < 0) {
-        puts("Send: could not send. Try again.");
+    for(int i = 0; i < 5; i++) {
+        sock_udp_send(&sock, ping, PACKET_SIZE, &remote);
+        ztimer_sleep(ZTIMER_SEC, 1);
     }
     printf("Sent last message: %ld-%ld\n", ping->msg_no, ping->replies);
 

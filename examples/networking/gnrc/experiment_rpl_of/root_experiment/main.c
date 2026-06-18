@@ -37,8 +37,6 @@ static sema_inv_t thread_sync;
 static bool running;
 static bool first_msg_rcvd = false;
 
-static uint32_t initial_time = 0;
-
 // record data
 static node_info nodes[NODE_MAP_SIZE] = {0};
 
@@ -54,39 +52,28 @@ static void _print_data(void)
 {
     uint8_t node_amount = 0;
     uint8_t total_parent_change = 0;
-    uint64_t total_sent = 0;
-    uint64_t total_replies = 0;
-    printf("Summary:\n");
+    printf("Summary:\n\n");
     for (int i = 0; i < NODE_MAP_SIZE; i++)
     {
         if(nodes[i].occupied)
         {
             // print Node infos
-            uint8_t pdr = 0;
-            if (nodes[i].sent > 0) 
-            {
-                pdr = (nodes[i].replies / nodes[i].sent) * 100;
-            }
             // Name;Parent;parent_changed;pdr
-            printf("%s;%s;%d;%d\n", nodes[i].current_parent.child, 
-                    nodes[i].current_parent.parent, nodes[i].parent_changed, pdr);
+            printf("%s;%s;%d\n", nodes[i].current_parent.child, 
+                    nodes[i].current_parent.parent, nodes[i].parent_changed);
             // add average values
             total_parent_change = total_parent_change + nodes[i].parent_changed;
-            total_replies = total_replies + nodes[i].replies;
-            total_sent = total_sent + nodes[i].sent;
             node_amount++;
         }
     }
     printf("Total_parent_changes: %d\n", total_parent_change);
     printf("Total nodes: %d\n", node_amount);
-    printf("PDR: %lld and %lld = %lld\n", total_replies, total_sent, (total_replies / total_sent) * 100);
     print_tree(nodes);
 }
 
 static void *_dispatch_thread(void *arg)
 {
     (void)arg;
-    initial_time = ztimer_now(ZTIMER_USEC);
     msg_init_queue(dispatch_queue, DISPATCH_QUEUE_SIZE);
     bool send_finished = false;
 
@@ -104,7 +91,6 @@ static void *_dispatch_thread(void *arg)
         msg_ping_t *ping = &payload->ping;
         char address[5] = {0};
         ipv6_to_identifier(&payload->address, address);
-        uint32_t time_now = ztimer_now(ZTIMER_USEC) - initial_time;
 
         if(ping->etx == 0 && ping->rssi == 0) {
             printf("Node_last_info:%s;%ld;%ld\n", address, ping->msg_no, ping->replies);
@@ -114,7 +100,7 @@ static void *_dispatch_thread(void *arg)
 
         // Name;time;rtt;etx;energy;hp;rssi;replies;sent
         printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%ld;%ld\n", 
-               address, time_now, ping->rtt_last, ping->etx, 
+               address, ping->time_passed, ping->rtt_last, ping->etx, 
                ping->energy, ping->hp, ping->rssi, ping->replies, ping->msg_no);
         if (put_node(payload->address, ping, nodes) == 1)
         {
@@ -134,7 +120,7 @@ static void *_listen_thread(void *ctx)
 {
     (void)ctx;
     static char server_buffer[PACKET_SIZE];
-    uint32_t timeout = 120 * US_PER_SEC;
+    uint32_t timeout = (NUM_OF_PINGS * delay_us) + (120 * US_PER_SEC);
     
     while (running) {
         /* receive ping */
