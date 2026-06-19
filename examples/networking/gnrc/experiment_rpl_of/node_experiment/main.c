@@ -34,7 +34,7 @@
 #  define RECORD_CACHE_SIZE (15)
 #endif
 
-static uint32_t seq_no = 0;
+static uint32_t seq_no = 1;
 static sock_udp_t sock;
 
 static char send_thread_stack[THREAD_STACKSIZE_MAIN + THREAD_EXTRA_STACKSIZE_PRINTF];
@@ -257,9 +257,11 @@ int main(void)
         if (inst && inst->dodag.parents) {
             break;
         }
-        ztimer_sleep(ZTIMER_SEC, 1);
+        ztimer_sleep(ZTIMER_SEC, 5);
     }
-    puts("Node: parent found, starting experiment");
+    char my_parent[5];
+    get_parent(my_parent);
+    printf("Found my parent: %s\n", my_parent);
 
     /* UDP setup */
     sock_udp_ep_t local = { .family = AF_INET6,

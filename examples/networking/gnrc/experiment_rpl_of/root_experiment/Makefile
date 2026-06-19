@@ -13,6 +13,12 @@ USEMODULE += ztimer_sec
 USEMODULE += ztimer_usec
 USEMODULE += sema_inv
 
+# Neighbor Stats
+USEMODULE += netstats_neighbor
+USEMODULE += netstats_neighbor_etx
+USEMODULE += netstats_neighbor_rssi
+USEMODULE += netstats_neighbor_lqi
+
 # For UDP
 USEMODULE += sock_udp
 USEMODULE += sock_util
@@ -39,6 +45,11 @@ USEMODULE += gnrc_rpl_mrhof_etx
 #USEMODULE += gnrc_rpl_mrhof_lqi
 # use only when battery connected
 #USEMODULE += gnrc_rpl_mrhof_energy
+
+# adjust these parameters to the number of nodes and the number of parent set
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=10
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=10
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_DEFAULT_ROUTER_NUMOF=3
 
 # Shell
 USEMODULE += shell

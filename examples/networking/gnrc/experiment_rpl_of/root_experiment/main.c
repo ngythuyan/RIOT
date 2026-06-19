@@ -59,9 +59,9 @@ static void _print_data(void)
         {
             // print Node infos
             // Name;Parent;parent_changed;pdr
-            printf("%s;%s;%d\n", nodes[i].current_parent.child, 
+            printf("Printer:%s;%s;%d\n", nodes[i].current_parent.child, 
                     nodes[i].current_parent.parent, nodes[i].parent_changed);
-            // add average values
+            // add values
             total_parent_change = total_parent_change + nodes[i].parent_changed;
             node_amount++;
         }
@@ -151,6 +151,13 @@ static void *_listen_thread(void *ctx)
         pong->msg_no = ping->msg_no;
         if (sock_udp_send(&sock, pong, PACKET_SIZE, &remote) < 0) {
             puts("Listen: Error sending reply");
+        }
+        else {
+            if (ping->etx != 0 && ping->rssi != 0) {
+                char sender[5];
+                ipv6_to_identifier((ipv6_addr_t *)&remote.addr.ipv6, sender);
+                printf("Listener: Sent pong to:%s\n", sender);
+            }
         }
 
         /* Copy payload and hand off to dispatcher */
