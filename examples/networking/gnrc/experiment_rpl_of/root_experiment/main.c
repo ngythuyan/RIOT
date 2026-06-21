@@ -19,7 +19,7 @@
 #include "shell.h"
 #include "structures.h"
 
-#define DISPATCH_QUEUE_SIZE (NUM_OF_PINGS * NUM_OF_NODES)
+#define DISPATCH_QUEUE_SIZE (NUM_OF_NODES * 4)
 #define MSG_STOP 0xFF
 
 static sock_udp_t sock;
@@ -92,21 +92,17 @@ static void *_dispatch_thread(void *arg)
         char address[5] = {0};
         ipv6_to_identifier(&payload->address, address);
 
-        if(ping->etx == 0 && ping->rssi == 0) {
+        if(ping->last_info == 1) {
             printf("Node_last_info:%s;%ld;%ld\n", address, ping->msg_no, ping->replies);
             free(payload);
             continue;
         }
 
-        // Name;time;rtt;etx;energy;hp;rssi;replies;sent
-        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%ld;%ld\n", 
+        // Name;time;rtt;etx;energy;hp;rssi;lqi;replies;sent
+        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%d;%ld;%ld\n", 
                address, ping->time_passed, ping->rtt_last, ping->etx, 
-               ping->energy, ping->hp, ping->rssi, ping->replies, ping->msg_no);
-        if (put_node(payload->address, ping, nodes) == 1)
-        {
-            printf("Dispatcher: ");
-            print_tree(nodes);
-        }
+               ping->energy, ping->hp, ping->rssi, ping->lqi, ping->replies, ping->msg_no);
+        put_node(payload->address, ping, nodes);
         
         free(payload);
     }
@@ -153,10 +149,10 @@ static void *_listen_thread(void *ctx)
             puts("Listen: Error sending reply");
         }
         else {
-            if (ping->etx != 0 && ping->rssi != 0) {
+            if (ping->last_info == 0) {
                 char sender[5];
                 ipv6_to_identifier((ipv6_addr_t *)&remote.addr.ipv6, sender);
-                printf("Listener: Sent pong to:%s\n", sender);
+                printf("Listener:Sent_pong;%ld;%s\n", pong->msg_no, sender);
             }
         }
 
@@ -205,11 +201,14 @@ static int exp_cmd(int argc, char **argv)
     }
     else if (strcmp(argv[1], "running") == 0) {
         if (running) {
-            printf("\nExperiment still ongoing: %d\n", 0);
+            printf("Experiment still ongoing\n");
         }
         else {
-            printf("\nExperiment stopped: %d\n", 1);
+            printf("Experiment stopped\n");
         }
+    }
+    else if(strcmp(argv[1], "tree") == 0) {
+        print_tree(nodes);
     }
     else {
         puts("error: invalid command");

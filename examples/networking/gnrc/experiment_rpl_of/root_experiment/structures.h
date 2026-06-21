@@ -14,7 +14,7 @@
 #include "../experiment.h"
 
 #ifndef NODE_MAP_SIZE
-#define NODE_MAP_SIZE  (NUM_OF_NODES * 3 / 2)
+#define NODE_MAP_SIZE  (NUM_OF_NODES * 2)
 #endif
 
 #ifndef MAX_PARENT_CHANGE

@@ -33,15 +33,18 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
     uint32_t hash = hash_ipv6(addr.u8);
     node_info *target_slot = &nodes[hash];
     bool check = cmp_addrs(target_slot->address, addr.u8);
-    while(target_slot->occupied && !check) 
+    uint32_t tries = 0;
+    while(target_slot->occupied && !check && tries < NODE_MAP_SIZE)
     {
-        hash++;
+        hash = (hash + 1) % NODE_MAP_SIZE;
         target_slot = &nodes[hash];
         check = cmp_addrs(target_slot->address, addr.u8);
-        if(hash >= NODE_MAP_SIZE)
-        {
-            hash = 0;
-        }
+    }
+
+    if (tries >= NODE_MAP_SIZE)
+    {
+        printf("put_node: table full for some reason\n");
+        return 2;
     }
 
     /* put in data */
@@ -57,14 +60,14 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
         ipv6_to_identifier(&addr, target_slot->current_parent.child);
         strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
         target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
-        return 0;
+        return 1;
     }
     else if (strncmp(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN) != 0)
     {
         target_slot->parent_changed++;
         strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
         target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
-        return 1;
+        return 0;
     }
     return 0;
 }
@@ -78,7 +81,7 @@ void print_tree(node_info *info)
         node_info node = info[i];
         if (node.occupied)
         {
-            printf("-%s:%s", node.current_parent.parent, node.current_parent.child);
+            printf("-%s,%s", node.current_parent.parent, node.current_parent.child);
         }
     }
     printf("\n");

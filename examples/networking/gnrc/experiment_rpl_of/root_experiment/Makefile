@@ -40,9 +40,9 @@ USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
-USEMODULE += gnrc_rpl_mrhof_etx
+#USEMODULE += gnrc_rpl_mrhof_etx
 # optional alternative metric, hardware must support it
-#USEMODULE += gnrc_rpl_mrhof_lqi
+USEMODULE += gnrc_rpl_mrhof_lqi
 # use only when battery connected
 #USEMODULE += gnrc_rpl_mrhof_energy
 
@@ -50,6 +50,9 @@ USEMODULE += gnrc_rpl_mrhof_etx
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=10
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=10
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_DEFAULT_ROUTER_NUMOF=3
+
+# UDP queue size (standard=3)
+#CFLAGS += -DCONFIG_GNRC_UDP_MSG_QUEUE_SIZE_EXP=4
 
 # Shell
 USEMODULE += shell
@@ -68,9 +71,3 @@ SRC += structures.c
 UF2_MOUNTPOINT = /media/pi/feather
 
 include $(RIOTBASE)/Makefile.include
-
-ifeq ($(ROOT),1)
-  CFLAGS += -DROOT=1
-else
-  CFLAGS += -DROOT=0
-endif

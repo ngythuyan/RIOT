@@ -45,6 +45,7 @@ static msg_ping_t *ping = (void *)buf_tx;
 static uint32_t initial_time;
 
 static volatile bool running;
+static volatile bool sending = true;
 static sema_inv_t thread_sync;
 static mutex_t mu = MUTEX_INIT;
 
@@ -124,15 +125,15 @@ static int get_stats(void)
         printf("Node: stats not found\n");
         ping->etx = 0;
         ping->rssi = 0;
+        ping->lqi = 10;
         return 0;
     }
 
     netstats_nb_t nb_stats;
     netstats_nb_get(&iface->netif, nce.l2addr, nce.l2addr_len, &nb_stats);
-
-    printf("Node: %ld -- ETX-%d, RSSI-%d\n", seq_no, nb_stats.etx, nb_stats.rssi);
     ping->etx = nb_stats.etx;
     ping->rssi = nb_stats.rssi;
+    ping->lqi = nb_stats.lqi;
     return 0;
 }
 
@@ -154,9 +155,12 @@ static void *_listen_thread(void *ctx)
         int res = sock_udp_recv(&sock, buf, PACKET_SIZE, timeout, NULL);
 
         if (res == -ETIMEDOUT) {
-            puts("Listen: listen thread terminates");
-            sema_inv_post(&thread_sync);
-            return NULL;
+            if (!sending) {
+                puts("Listen: listen thread terminates");
+                sema_inv_post(&thread_sync);
+                return NULL;
+            }
+            continue;;
         }
         else if (res < 0) {
             printf("Listen: Error while receiving: %d\n", res);
@@ -185,6 +189,7 @@ static void *_listen_thread(void *ctx)
 /* sending thread sends ping messages to server */
 static void *_send_thread(void *ctx)
 {
+    ztimer_sleep(ZTIMER_SEC, 15);
     puts("Send: sending thread start");
 
     /* prepare udp endpoint*/
@@ -195,7 +200,7 @@ static void *_send_thread(void *ctx)
 
     initial_time = ztimer_now(ZTIMER_MSEC);
 
-    while (seq_no < NUM_OF_PINGS) {
+    while (seq_no <= NUM_OF_PINGS) {
         /* prepare ping message */
         mutex_lock(&mu);
         int res = get_parent(ping->parent);
@@ -224,10 +229,13 @@ static void *_send_thread(void *ctx)
         if((res = sock_udp_send(&sock, &local_ping, PACKET_SIZE, &remote)) < 0) {
             puts("Send: could not send");
         }
+        printf("Sent msg: Info %ld-%ld\n", ping->msg_no, ping->replies);
         ztimer_sleep(ZTIMER_USEC, delay_us);
     }
 
+    ztimer_sleep(ZTIMER_SEC, 10);
     puts("Send: sending thread terminates");
+    sending = false;
     sema_inv_post(&thread_sync);
     return NULL;
 }
@@ -257,7 +265,7 @@ int main(void)
         if (inst && inst->dodag.parents) {
             break;
         }
-        ztimer_sleep(ZTIMER_SEC, 5);
+        ztimer_sleep(ZTIMER_SEC, 2);
     }
     char my_parent[5];
     get_parent(my_parent);
@@ -301,13 +309,14 @@ int main(void)
     if (sock_udp_str2ep(&remote, SERVER_DEFAULT) < 0) {
         puts("Send: Unable to parse destination address");
     }
-    ping->rssi = 0;
-    ping->etx = 0;
+    ping->last_info = 1;
     for(int i = 0; i < 5; i++) {
         sock_udp_send(&sock, ping, PACKET_SIZE, &remote);
         ztimer_sleep(ZTIMER_SEC, 1);
     }
     printf("Sent last message: %ld-%ld\n", ping->msg_no, ping->replies);
+    get_parent(my_parent);
+    printf("My parent: %s\n", my_parent);
 
    sock_udp_close(&sock);
    memset(send_thread_stack, 0, sizeof(send_thread_stack));
