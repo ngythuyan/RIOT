@@ -1,5 +1,7 @@
 #include "mrhof_energy.h"
 
+//#define ADC_BATTERY_LINE (5)
+
 static uint32_t initial_energy;
 static uint32_t initial_time;
 
@@ -17,15 +19,27 @@ uint32_t get_remaining_energy(void)
     }
     uint32_t vbat_mv = sample * ADC_BAT_RESISTOR_DIV / AVG_CNT * ADC_VREF_MV / ADC_MAX_VAL;
 
-    return (uint8_t) VBAT_MULTIPLICATOR * (vbat_mv - VBAT_MIN_MV);
+    return vbat_mv;
 }
 
 uint8_t get_energetic_happiness(void)
 {
-    uint32_t e_bat = get_remaining_energy();
-    uint32_t time_passed = ztimer_now(ZTIMER_USEC) - initial_time;
+    double e_bat = (double) get_remaining_energy();
+    double time_passed = (double) ztimer_now(ZTIMER_USEC) - initial_time;
 
-    return (uint8_t) (e_bat / (initial_energy * (DESIRED_LIFETIME_US - time_passed)) / DESIRED_LIFETIME_US);
+    double energy = e_bat / initial_energy;
+    if (e_bat >= initial_energy) {
+        energy = 1;
+    }
+    double time = (DESIRED_LIFETIME_US - (double) time_passed) / DESIRED_LIFETIME_US;
+    double E_E = energy * time;
+    
+    uint8_t E_E_p = (uint8_t) (E_E * 100);
+    if (E_E_p < 20) 
+    {
+        return 0;
+    }
+    return E_E_p;
 }
 
 void init_mrhof_energy(void)

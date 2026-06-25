@@ -12,6 +12,7 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
 #include "periph/adc.h"
 #include "ztimer.h"
 
@@ -22,10 +23,8 @@
 #define ADC_BAT_RESISTOR_DIV  (2)
 #define AVG_CNT               (16)
 #define VBAT_MIN_MV           (3700)
-#define VBAT_MULTIPLICATOR    (0.9404)
-#define ADC_BATTERY_LINE      (5)
 
-#define DESIRED_LIFETIME_US (64800000000)  /* 18 h*/
+#define DESIRED_LIFETIME_US (129600000000)  /* 36 h*/
 
 /**
  * @brief   Measure current voltage via ADC_BATTERY_LINE and return remaining energy
