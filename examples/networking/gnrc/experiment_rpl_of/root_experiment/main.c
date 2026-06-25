@@ -59,8 +59,13 @@ static void _print_data(void)
         {
             // print Node infos
             // Name;Parent;parent_changed;pdr
-            printf("Printer:%s;%s;%d\n", nodes[i].current_parent.child, 
+            printf("Printer:%s;%s;%d\n", nodes[i].current_parent.child,
                     nodes[i].current_parent.parent, nodes[i].parent_changed);
+            printf("Parents:%s:", nodes[i].current_parent.child);
+            for(int j = 0; j < nodes[i].parent_changed; j++) {
+                printf("%s;", nodes[i].parents[j]);
+            }
+            printf("\n");
             // add values
             total_parent_change = total_parent_change + nodes[i].parent_changed;
             node_amount++;
@@ -103,7 +108,7 @@ static void *_dispatch_thread(void *arg)
                address, ping->time_passed, ping->rtt_last, ping->etx, 
                ping->energy, ping->hp, ping->rssi, ping->lqi, ping->replies, ping->msg_no);
         put_node(payload->address, ping, nodes);
-        
+        print_tree(nodes);
         free(payload);
     }
     puts("Dispatch: Dispatch thread terminates");
@@ -126,6 +131,10 @@ static void *_listen_thread(void *ctx)
                                 &remote);
         if (res == -ETIMEDOUT) {
             puts("Listen: Listen thread terminates");
+            if (!first_msg_rcvd) {
+                continue;
+            }
+
             running = false;
             msg_t stop_msg = { .type = MSG_STOP };
             msg_send(&stop_msg, dispatch_pid);
@@ -141,11 +150,10 @@ static void *_listen_thread(void *ctx)
         }
 
         first_msg_rcvd = true;
-
         /* send pong back */
         msg_ping_t *ping = (void *)server_buffer;
         pong->msg_no = ping->msg_no;
-        if (sock_udp_send(&sock, pong, PACKET_SIZE, &remote) < 0) {
+        if (sock_udp_send(&sock, pong, sizeof(msg_ping_t), &remote) < 0) {
             puts("Listen: Error sending reply");
         }
         else {
@@ -167,7 +175,7 @@ static void *_listen_thread(void *ctx)
 
         msg_t msg;
         msg.content.ptr = copy;
-        if (msg_try_send(&msg, dispatch_pid) <= 0) {
+        if (msg_send(&msg, dispatch_pid) <= 0) {
             printf("Listen: Dispatch queue full\n");
             free(copy);
             continue;
@@ -191,9 +199,8 @@ static int exp_cmd(int argc, char **argv)
     }
 
     if (strcmp(argv[1], "stop") == 0) {
-        printf("Stopping experiment: %d\n", 3);
+        printf("Stopping experiment:\n");
         running = false;
-        sema_inv_init(&thread_sync, 2);
         sema_inv_wait(&thread_sync);
         sock_udp_close(&sock);
         memset(dispatch_thread_stack, 0, sizeof(dispatch_thread_stack));
@@ -268,6 +275,7 @@ int main(void)
     
     /* ================= receive messages ================= */
     running = true;
+    sema_inv_init(&thread_sync, 2);
     thread_create(listen_thread_stack, sizeof(listen_thread_stack),
                 THREAD_PRIORITY_MAIN - 1, 0,
                 _listen_thread, NULL, "UDP Listen Thread");

@@ -42,17 +42,23 @@ USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
 #USEMODULE += gnrc_rpl_mrhof_etx
 # optional alternative metric, hardware must support it
-USEMODULE += gnrc_rpl_mrhof_lqi
+#USEMODULE += gnrc_rpl_mrhof_lqi
 # use only when battery connected
-#USEMODULE += gnrc_rpl_mrhof_energy
+USEMODULE += gnrc_rpl_mrhof_energy
 
+# change to number of nodes and parent set
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=10
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=10
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_DEFAULT_ROUTER_NUMOF=3
 
+# CSMA parameters
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MIN_BE=5
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_RETRIES=6
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MAX_BE=7
+
 # Battery
-#FEATURES_REQUIRED += periph_adc
-#CFLAGS += -DADC_BATTERY_LINE=ADC_LINE\(5\)
+FEATURES_REQUIRED += periph_adc
+CFLAGS += -DADC_BATTERY_LINE=ADC_LINE\(5\)
 
 # in case border router is up
 CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CHANNEL=15

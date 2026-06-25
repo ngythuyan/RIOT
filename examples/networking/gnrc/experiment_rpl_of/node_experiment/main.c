@@ -16,7 +16,7 @@
  */
 
 #include "../experiment.h"
-
+#include "random.h"
 #include "macros/utils.h"
 #include "net/utils.h"
 #include "mutex.h"
@@ -189,8 +189,9 @@ static void *_listen_thread(void *ctx)
 /* sending thread sends ping messages to server */
 static void *_send_thread(void *ctx)
 {
-    ztimer_sleep(ZTIMER_SEC, 15);
+    ztimer_sleep(ZTIMER_SEC, 30);
     puts("Send: sending thread start");
+    uint32_t extra =  random_uint32_range (0, 200);
 
     /* prepare udp endpoint*/
     sock_udp_ep_t remote = { 0 };
@@ -220,17 +221,19 @@ static void *_send_thread(void *ctx)
     #endif
         ping->msg_no = seq_no;
         _put_rtt(seq_no);
-        seq_no++;
         ping->time_passed = ztimer_now(ZTIMER_MSEC) - initial_time;
         msg_ping_t local_ping = *ping;
         mutex_unlock(&mu);
 
         /* send UDP msg */
-        if((res = sock_udp_send(&sock, &local_ping, PACKET_SIZE, &remote)) < 0) {
+        if((res = sock_udp_send(&sock, &local_ping, sizeof(msg_ping_t), &remote)) < 0) {
             puts("Send: could not send");
         }
-        printf("Sent msg: Info %ld-%ld\n", ping->msg_no, ping->replies);
-        ztimer_sleep(ZTIMER_USEC, delay_us);
+        else {
+            printf("Sent msg: Info %ld-%ld\n", ping->msg_no, ping->replies);
+            seq_no++;
+        }
+        ztimer_sleep(ZTIMER_USEC, delay_us + extra);
     }
 
     ztimer_sleep(ZTIMER_SEC, 10);

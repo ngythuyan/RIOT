@@ -37,6 +37,7 @@ typedef struct {
     uint32_t sent;
     uint8_t parent_changed;
     bool occupied;
+    char parents[MAX_PARENT_CHANGE][IPV6_CUSTOM_ADDR_STR_LEN];
     edge current_parent;
 } node_info;
 

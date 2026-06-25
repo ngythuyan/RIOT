@@ -60,11 +60,15 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
         ipv6_to_identifier(&addr, target_slot->current_parent.child);
         strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
         target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
-        return 1;
+        strncpy(target_slot->parents[0], ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1); 
+        target_slot->parents[0][IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
+        return 0;
     }
     else if (strncmp(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN) != 0)
     {
         target_slot->parent_changed++;
+        strncpy(target_slot->parents[target_slot->parent_changed], ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1); 
+        target_slot->parents[target_slot->parent_changed][IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
         strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
         target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
         return 0;

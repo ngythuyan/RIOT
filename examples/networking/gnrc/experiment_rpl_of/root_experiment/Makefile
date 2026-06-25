@@ -42,17 +42,22 @@ USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
 #USEMODULE += gnrc_rpl_mrhof_etx
 # optional alternative metric, hardware must support it
-USEMODULE += gnrc_rpl_mrhof_lqi
+#USEMODULE += gnrc_rpl_mrhof_lqi
 # use only when battery connected
-#USEMODULE += gnrc_rpl_mrhof_energy
+USEMODULE += gnrc_rpl_mrhof_energy
 
 # adjust these parameters to the number of nodes and the number of parent set
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=10
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=10
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_DEFAULT_ROUTER_NUMOF=3
 
+# CSMA parameters
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MIN_BE=4
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_RETRIES=5
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MAX_BE=6
+
 # UDP queue size (standard=3)
-#CFLAGS += -DCONFIG_GNRC_UDP_MSG_QUEUE_SIZE_EXP=4
+CFLAGS += -DCONFIG_GNRC_UDP_MSG_QUEUE_SIZE_EXP=5
 
 # Shell
 USEMODULE += shell
