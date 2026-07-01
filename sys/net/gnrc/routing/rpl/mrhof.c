@@ -293,7 +293,6 @@ int which_dodag(gnrc_rpl_dodag_t *d1, gnrc_rpl_dio_t *dio)
     else if (dio_prf > d1->prf) {
         return 1;
     }
-    
     return 1;
 }
 
