@@ -60,6 +60,14 @@ static uint32_t delay_us = US_PER_SEC;
 #ifndef PACKET_SIZE
 #define PACKET_SIZE  (128)
 #endif
+
+/**
+ * @brief   Default address, iface, port of server
+ */
+#ifndef SERVER_DEFAULT
+//#define SERVER_DEFAULT    "[2001:db8::1\%6]:12345"  // for Fit IoT-Lab
+#define SERVER_DEFAULT    "[2001:db8::1\%7]:12345"
+#endif
 /* ================= Configuration END ================= */
 
 /**
@@ -89,14 +97,6 @@ static uint32_t delay_us = US_PER_SEC;
  */
 #ifndef ADDRESS_DEFAULT
 #define ADDRESS_DEFAULT    "2001:db8::1"
-#endif
-
-/**
- * @brief   Default address, iface, port of server
- */
-#ifndef SERVER_DEFAULT
-//#define SERVER_DEFAULT    "[2001:db8::1\%6]:12345"  // for Fit IoT-Lab
-#define SERVER_DEFAULT    "[2001:db8::1\%7]:12345"
 #endif
 
 /**

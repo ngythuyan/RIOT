@@ -28,6 +28,16 @@
 // for battery reading
 #if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
     #include "battery.h"
+    #include "board.h"
+    #include "saul_reg.h"
+#endif
+
+#define HIGH_ENERGY_CONSUMPTION (1)
+
+#if HIGH_ENERGY_CONSUMPTION
+    #include "ws281x.h"
+    #include "ws281x_params.h"
+    static ws281x_t dev;
 #endif
 
 #ifndef RECORD_CACHE_SIZE
@@ -35,6 +45,7 @@
 #endif
 
 static uint32_t seq_no = 1;
+static uint32_t last_pong_no;
 static sock_udp_t sock;
 
 static char send_thread_stack[THREAD_STACKSIZE_MAIN + THREAD_EXTRA_STACKSIZE_PRINTF];
@@ -48,7 +59,6 @@ static volatile bool running;
 static volatile bool sending = true;
 static sema_inv_t thread_sync;
 static mutex_t mu = MUTEX_INIT;
-
 
 /**
  * @brief   Recordings of time sent of messages
@@ -171,12 +181,17 @@ static void *_listen_thread(void *ctx)
             continue;
         }
 
+        if (pong->msg_no == last_pong_no) {
+            continue;
+        }
+        last_pong_no = pong->msg_no;
         printf("Listen: pong received %ld\n", pong->msg_no);
         /* calculate RTT and save */
         mutex_lock(&mu);
         uint32_t rtt = _get_rtt(pong->msg_no);
         ping->rtt_last = rtt;
         ping->replies++;
+        ping->rtt_msg_no = pong->msg_no;
         mutex_unlock(&mu);
     }
 
@@ -201,7 +216,7 @@ static void *_send_thread(void *ctx)
 
     initial_time = ztimer_now(ZTIMER_MSEC);
 
-    while (seq_no <= NUM_OF_PINGS) {
+    while (running) {
         /* prepare ping message */
         mutex_lock(&mu);
         int res = get_parent(ping->parent);
@@ -289,6 +304,16 @@ int main(void)
 
     puts("Node: RPL and UDP setup finished");
     _print_addr();
+
+    /* turn on LEDs */
+    LED0_ON;
+    LED1_ON;
+#if HIGH_ENERGY_CONSUMPTION
+    ws281x_init (&dev, &ws281x_params[0]);
+    color_rgb_t color = {255, 255, 255};
+    ws281x_set (&dev, 0, color);
+    ws281x_write (&dev);
+#endif
 
     sema_inv_init(&thread_sync, 2);
     /* ================= setup listen thread ================= */

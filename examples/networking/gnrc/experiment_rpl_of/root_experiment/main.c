@@ -104,11 +104,12 @@ static void *_dispatch_thread(void *arg)
         }
 
         // Name;time;rtt;etx;energy;hp;rssi;lqi;replies;sent
-        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%d;%ld;%ld\n", 
-               address, ping->time_passed, ping->rtt_last, ping->etx, 
+        printf("Dispatcher:%s;%ld;%ld;%ld;%d;%d;%d;%d;%d;%ld;%ld\n", 
+               address, ping->time_passed, ping->rtt_last, ping->rtt_msg_no, ping->etx, 
                ping->energy, ping->hp, ping->rssi, ping->lqi, ping->replies, ping->msg_no);
-        put_node(payload->address, ping, nodes);
-        print_tree(nodes);
+        if (put_node(payload->address, ping, nodes) > 0 ) {
+            print_tree(nodes);
+        }
         free(payload);
     }
     puts("Dispatch: Dispatch thread terminates");
@@ -121,13 +122,13 @@ static void *_listen_thread(void *ctx)
 {
     (void)ctx;
     static char server_buffer[PACKET_SIZE];
-    uint32_t timeout = (NUM_OF_PINGS * delay_us) + (120 * US_PER_SEC);
+    //uint32_t timeout = (NUM_OF_PINGS * delay_us) + (120 * US_PER_SEC);
     
     while (running) {
         /* receive ping */
         int res = sock_udp_recv(&sock, server_buffer,
                                 PACKET_SIZE, 
-                                timeout,
+                                SOCK_NO_TIMEOUT,
                                 &remote);
         if (res == -ETIMEDOUT) {
             puts("Listen: Listen thread terminates");
@@ -153,8 +154,9 @@ static void *_listen_thread(void *ctx)
         /* send pong back */
         msg_ping_t *ping = (void *)server_buffer;
         pong->msg_no = ping->msg_no;
-        if (sock_udp_send(&sock, pong, sizeof(msg_ping_t), &remote) < 0) {
-            puts("Listen: Error sending reply");
+        res = sock_udp_send(&sock, pong, sizeof(msg_ping_t), &remote);
+        if (res < 0) {
+            printf("Listen: Error sending reply %d\n", res);
         }
         else {
             if (ping->last_info == 0) {
@@ -215,6 +217,7 @@ static int exp_cmd(int argc, char **argv)
         }
     }
     else if(strcmp(argv[1], "tree") == 0) {
+        printf("Print:");
         print_tree(nodes);
     }
     else {
