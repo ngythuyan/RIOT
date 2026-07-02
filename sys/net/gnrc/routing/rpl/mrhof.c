@@ -24,9 +24,14 @@
 #include "net/netstats.h"
 #include "net/netstats/neighbor.h"
 
+#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+#include "mrhof_energy.h"
+#endif
+
 #define ENABLE_DEBUG    (0)
 #include "debug.h"
 
+#if !IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
 /**
  * Retrieve statistics from the netstats neighbor module
  */
@@ -42,12 +47,17 @@ static bool _mrhof_get_stats(kernel_pid_t iface_parent, ipv6_addr_t addr, netsta
 
     return netstats_nb_get(&iface->netif, nce.l2addr, nce.l2addr_len, out);
 }
+#endif
 
 /**
  * Select a metric to use as a link metric
  */
 static inline uint16_t _link_metric(netstats_nb_t *stats)
 {
+#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+    /* 100 = best, 0 = worst energy; map best to ETX = 1, worst to ETX = 7 */
+    return 3 * (100 - get_energetic_happiness()) * 255 / 100 + NETSTATS_NB_ETX_DIVISOR;
+#endif
     if (stats == NULL) {
         return MRHOF_MAX_PATH_COST;
     }
@@ -79,6 +89,7 @@ static bool _mrhof_is_acceptable(gnrc_rpl_parent_t *parent, netstats_nb_t *stats
            (_mrhof_get_path_cost(parent->rank, stats) < MRHOF_MAX_PATH_COST);
 }
 
+#if !IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
 /**
  * Check if a parent is fresh
  */
@@ -90,6 +101,7 @@ static bool _mrhof_isfresh(netif_t *netif, netstats_nb_t *stats)
     }
     return netstats_nb_isfresh(netif, stats);
 }
+#endif
 
 /* Compare acceptability of two parents */
 static int _mrhof_cmp_acceptable(gnrc_rpl_parent_t *p1, netstats_nb_t *p1_stats,
@@ -116,6 +128,7 @@ static int _mrhof_cmp_acceptable(gnrc_rpl_parent_t *p1, netstats_nb_t *p1_stats,
     return 0;
 }
 
+#if !IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
 /* Compare freshness of two parents */
 static int _mrhof_cmp_fresh(netif_t *netif,
                             netstats_nb_t *p1_stats,
@@ -141,6 +154,7 @@ static int _mrhof_cmp_fresh(netif_t *netif,
 
     return 0;
 }
+#endif
 
 static void reset(gnrc_rpl_dodag_t *dodag)
 {
@@ -168,6 +182,10 @@ static uint16_t calc_rank(gnrc_rpl_dodag_t *dodag, uint16_t base_rank)
     uint8_t max_dagrank = 0;
     uint16_t cost_rank, minhoprankincr = dodag->instance->min_hop_rank_inc;
 
+#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+    (void) elt_stats;
+    cost_rank = _mrhof_get_path_cost(dodag->parents->rank, NULL);
+#else
     /* Determine the path cost through the preferred parent */
     if (!_mrhof_get_stats(dodag->iface, dodag->parents->addr, &elt_stats)) {
         DEBUG("MRHOF: No stats for parent, assuming max rank\n");
@@ -176,17 +194,23 @@ static uint16_t calc_rank(gnrc_rpl_dodag_t *dodag, uint16_t base_rank)
 
     /* calculate rank for path through the preferred parent */
     cost_rank = _mrhof_get_path_cost(dodag->parents->rank, &elt_stats);
+#endif
 
     /* Determine the Rank of the member of the parent set with the highest
      * advertised Rank, rounded to the next higher integral Rank, i.e.,
      * to MinHopRankIncrease * (1 + floor(Rank/MinHopRankIncrease)).
      */
     LL_FOREACH(dodag->parents, elt) {
-        _mrhof_get_stats(elt->dodag->iface, elt->addr, &elt_stats);
+        netstats_nb_t * elt_stats_ptr = NULL;
+#if !IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+        if (_mrhof_get_stats(elt->dodag->iface, elt->addr, &elt_stats)) {
+            elt_stats_ptr = &elt_stats;
+        }
+#endif
         /* Only include parent in the parent set if the statistics are acceptable
          * and the path cost is not significantly worse than the current preferred parent */
-        if (_mrhof_is_acceptable(elt, &elt_stats) && \
-            (_mrhof_get_path_cost(elt->rank, &elt_stats) <= cost_rank + MRHOF_PARENT_SWITCH_THRESHOLD)) {
+        if (_mrhof_is_acceptable(elt, elt_stats_ptr) && \
+            (_mrhof_get_path_cost(elt->rank, elt_stats_ptr) <= cost_rank + MRHOF_PARENT_SWITCH_THRESHOLD)) {
             uint8_t new_dagrank = elt->rank / minhoprankincr;
             if (max_dagrank < new_dagrank) {
                 max_dagrank = new_dagrank;
@@ -212,9 +236,19 @@ static uint16_t calc_rank(gnrc_rpl_dodag_t *dodag, uint16_t base_rank)
  */
 static int which_parent(gnrc_rpl_parent_t *p1, gnrc_rpl_parent_t *p2)
 {
+    int cmp;
+#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+    /* Compare acceptability of parents */
+    cmp = _mrhof_cmp_acceptable(p1, NULL, p2, NULL);
+    if (cmp != 0) {
+        return cmp;
+    }
+
+    uint16_t p1_path_cost = _mrhof_get_path_cost(p1->rank, NULL);
+    uint16_t p2_path_cost = _mrhof_get_path_cost(p2->rank, NULL);
+#else
     /* Only return p2 if the rank (full etx path) is better than p1 and better
      * than the preferred parent full path etx by PARENT_SWITCH_THRESHOLD */
-    int cmp;
     netstats_nb_t p1_stats, p2_stats;
 
     assert(p1->dodag->iface == p2->dodag->iface);
@@ -238,7 +272,7 @@ static int which_parent(gnrc_rpl_parent_t *p1, gnrc_rpl_parent_t *p2)
 
     uint16_t p1_path_cost = _mrhof_get_path_cost(p1->rank, &p1_stats);
     uint16_t p2_path_cost = _mrhof_get_path_cost(p2->rank, &p2_stats);
-
+#endif
     /* Compare ETX of parents */
     if (p1_path_cost > p2_path_cost) {
         if (p1 == p1->dodag->parents) {
@@ -289,12 +323,19 @@ static int which_dodag(gnrc_rpl_dodag_t *d1, gnrc_rpl_dio_t *dio, kernel_pid_t d
     }
 
     /* prefer dodag with lesser resulting rank */
-    // get neighbour stats
-    netstats_nb_t d1_stats, dio_stats;
     gnrc_rpl_parent_t *d1_parent = d1->parents;
     if (d1_parent == NULL) {
         return 1;
     }
+#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+    (void) dio_iface;
+    (void) dio_addr;
+    uint16_t d1_path_cost = _mrhof_get_path_cost(d1_parent->rank, NULL);
+    uint16_t dio_rank = byteorder_ntohs(dio->rank);
+    uint16_t dio_path_cost = _mrhof_get_path_cost(dio_rank, NULL);
+#else
+    // get neighbour stats
+    netstats_nb_t d1_stats, dio_stats;
     if (!_mrhof_get_stats(d1_parent->dodag->iface, d1_parent->addr, &d1_stats) || !_mrhof_get_stats(dio_iface, dio_addr, &dio_stats)) {
         return -1;
     }
@@ -303,7 +344,7 @@ static int which_dodag(gnrc_rpl_dodag_t *d1, gnrc_rpl_dio_t *dio, kernel_pid_t d
     uint16_t d1_path_cost = _mrhof_get_path_cost(d1_parent->rank, &d1_stats);
     uint16_t dio_rank = byteorder_ntohs(dio->rank);
     uint16_t dio_path_cost = _mrhof_get_path_cost(dio_rank, &dio_stats);
-
+#endif
     // compare while using hysteresis
     if (d1_path_cost > dio_path_cost) {
         if (dio_path_cost + MRHOF_PARENT_SWITCH_THRESHOLD < d1_path_cost) {
