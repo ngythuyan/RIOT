@@ -80,7 +80,7 @@ int main(void)
     printf("\n=== RPL Node Starting ===\n");
     xtimer_sleep(2);
 
-    ws281x_t dev;
+    //ws281x_t dev;
     init_mrhof_energy_test();
 
     /* 1. Get first network interface */
@@ -103,14 +103,14 @@ int main(void)
         puts("Unable to parse destination address");
         return 1;
     }
-    puts("Turn LED on");
-    LED0_ON;
-    LED1_ON;
-    ws281x_init (&dev, &ws281x_params[0]);
-    color_rgb_t color = {255, 255, 255};
-    ws281x_set (&dev, 0, color);
-    ws281x_write (&dev);
-    puts("LED on");
+    //puts("Turn LED on");
+    //LED0_ON;
+    //LED1_ON;
+    //ws281x_init (&dev, &ws281x_params[0]);
+    //color_rgb_t color = {255, 255, 255};
+    //ws281x_set (&dev, 0, color);
+    //ws281x_write (&dev);
+    //puts("LED on");
     while (1) {
         // read voltage
         e1.energetic_happiness = get_energetic_happiness_test();

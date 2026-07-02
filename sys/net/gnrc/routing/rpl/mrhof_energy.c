@@ -7,12 +7,6 @@ static uint32_t initial_time;
 
 uint32_t get_remaining_energy(void) 
 {
-
-    if (adc_init(ADC_BATTERY_LINE) < 0) {
-        printf("battery_info_init: ADC_LINE(%u) init [FAILED]\n", ADC_BATTERY_LINE);
-        return 1;
-    }
-
     int sample = 0;
     for (unsigned i = 0; i < AVG_CNT; i++) {
         sample += adc_sample(ADC_BATTERY_LINE, ADC_RES);
@@ -46,4 +40,8 @@ void init_mrhof_energy(void)
 {
     initial_time = ztimer_now(ZTIMER_USEC);
     initial_energy = get_remaining_energy();
+
+    if (adc_init(ADC_BATTERY_LINE) < 0) {
+        printf("battery_info_init: ADC_LINE(%u) init [FAILED]\n", ADC_BATTERY_LINE);
+    }
 }
