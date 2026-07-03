@@ -49,7 +49,6 @@ uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
 
     /* put in data */
     memcpy(target_slot->address, addr.u8, IPV6_U8_ADDR_LEN);
-    target_slot->replies = ping->replies;
     target_slot->sent = ping->msg_no;
 
     /* save information parent child relationship */

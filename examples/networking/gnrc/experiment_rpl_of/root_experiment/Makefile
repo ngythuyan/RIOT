@@ -40,15 +40,11 @@ USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
-#USEMODULE += gnrc_rpl_mrhof_etx
-# optional alternative metric, hardware must support it
-#USEMODULE += gnrc_rpl_mrhof_lqi
-# use only when battery connected
 USEMODULE += gnrc_rpl_mrhof_energy
 
 # adjust these parameters to the number of nodes and the number of parent set
-CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=10
-CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=10
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=12
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=12
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_DEFAULT_ROUTER_NUMOF=3
 
 # CSMA parameters
@@ -71,7 +67,7 @@ USEMODULE += shell_cmds_default
 CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CHANNEL=15
 
 # in case nodes are too close
-#CFLAGS += -DCONFIG_IEEE802154_DEFAULT_TXPOWER=-16
+#CFLAGS += -DCONFIG_IEEE802154_DEFAULT_TXPOWER=-20
 
 # extra module
 SRC += main.c

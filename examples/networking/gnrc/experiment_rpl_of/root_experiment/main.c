@@ -97,16 +97,10 @@ static void *_dispatch_thread(void *arg)
         char address[5] = {0};
         ipv6_to_identifier(&payload->address, address);
 
-        if(ping->last_info == 1) {
-            printf("Node_last_info:%s;%ld;%ld\n", address, ping->msg_no, ping->replies);
-            free(payload);
-            continue;
-        }
-
-        // Name;time;rtt;etx;energy;hp;rssi;lqi;replies;sent
-        printf("Dispatcher:%s;%ld;%ld;%ld;%d;%d;%d;%d;%d;%ld;%ld\n", 
-               address, ping->time_passed, ping->rtt_last, ping->rtt_msg_no, ping->etx, 
-               ping->energy, ping->hp, ping->rssi, ping->lqi, ping->replies, ping->msg_no);
+        // Name;msg_no;etx;energy;hp;rssi;lqi
+        printf("Dispatcher:%s;%ld;%d;%d;%d;%d;%d;\n", 
+               address, ping->msg_no, ping->etx, ping->energy, 
+               ping->hp, ping->rssi, ping->lqi);
         if (put_node(payload->address, ping, nodes) > 0 ) {
             print_tree(nodes);
         }
@@ -121,49 +115,20 @@ static void *_dispatch_thread(void *arg)
 static void *_listen_thread(void *ctx)
 {
     (void)ctx;
-    static char server_buffer[PACKET_SIZE];
-    //uint32_t timeout = (NUM_OF_PINGS * delay_us) + (120 * US_PER_SEC);
+    static char server_buffer[128];
     
     while (running) {
         /* receive ping */
         int res = sock_udp_recv(&sock, server_buffer,
-                                PACKET_SIZE, 
+                                sizeof(msg_ping_t), 
                                 SOCK_NO_TIMEOUT,
                                 &remote);
-        if (res == -ETIMEDOUT) {
-            puts("Listen: Listen thread terminates");
-            if (!first_msg_rcvd) {
-                continue;
-            }
-
-            running = false;
-            msg_t stop_msg = { .type = MSG_STOP };
-            msg_send(&stop_msg, dispatch_pid);
-            sema_inv_post(&thread_sync);
-            return NULL;
-        }
-        else if (res < 0) 
+        if (res < 0) 
         {
             char address_string[5] = {0};
             ipv6_to_identifier((ipv6_addr_t *)&remote.addr.ipv6, address_string);
             printf("Listen: Error while receiving message from %*s\n", res, address_string);
             continue;
-        }
-
-        first_msg_rcvd = true;
-        /* send pong back */
-        msg_ping_t *ping = (void *)server_buffer;
-        pong->msg_no = ping->msg_no;
-        res = sock_udp_send(&sock, pong, sizeof(msg_ping_t), &remote);
-        if (res < 0) {
-            printf("Listen: Error sending reply %d\n", res);
-        }
-        else {
-            if (ping->last_info == 0) {
-                char sender[5];
-                ipv6_to_identifier((ipv6_addr_t *)&remote.addr.ipv6, sender);
-                printf("Listener:Sent_pong;%ld;%s\n", pong->msg_no, sender);
-            }
         }
 
         /* Copy payload and hand off to dispatcher */
@@ -185,11 +150,6 @@ static void *_listen_thread(void *ctx)
     }
 
     /* Never reached */
-    puts("Listen: Listen thread terminates");
-    running = false;
-    msg_t stop_msg = { .type = MSG_STOP };
-    msg_send(&stop_msg, dispatch_pid);
-    sema_inv_post(&thread_sync);
     return NULL;
 }
 
@@ -203,10 +163,7 @@ static int exp_cmd(int argc, char **argv)
     if (strcmp(argv[1], "stop") == 0) {
         printf("Stopping experiment:\n");
         running = false;
-        sema_inv_wait(&thread_sync);
         sock_udp_close(&sock);
-        memset(dispatch_thread_stack, 0, sizeof(dispatch_thread_stack));
-        memset(listen_thread_stack, 0, sizeof(listen_thread_stack));
     }
     else if (strcmp(argv[1], "running") == 0) {
         if (running) {

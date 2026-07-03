@@ -18,7 +18,7 @@
 #endif
 
 #ifndef MAX_PARENT_CHANGE
-#define MAX_PARENT_CHANGE  (5)
+#define MAX_PARENT_CHANGE  (10)
 #endif
 
 #ifndef IPV6_U8_ADDR_LEN
@@ -33,7 +33,6 @@ typedef struct
 
 typedef struct {
     uint8_t address[IPV6_U8_ADDR_LEN];
-    uint32_t replies;
     uint32_t sent;
     uint8_t parent_changed;
     bool occupied;
