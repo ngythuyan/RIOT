@@ -25,7 +25,7 @@
 static sock_udp_t sock;
 static sock_udp_ep_t remote;
 
-static char listen_thread_stack[THREAD_STACKSIZE_MAIN];
+static char listen_thread_stack[THREAD_STACKSIZE_MAIN + THREAD_EXTRA_STACKSIZE_PRINTF];
 static char dispatch_thread_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE_PRINTF];
 static msg_t dispatch_queue[DISPATCH_QUEUE_SIZE];
 static kernel_pid_t dispatch_pid;
@@ -58,9 +58,15 @@ static void _print_data(void)
         if(nodes[i].occupied)
         {
             // print Node infos
-            // Name;Parent;parent_changed;pdr
-            printf("Printer:%s;%s;%d\n", nodes[i].current_parent.child, 
-                    nodes[i].current_parent.parent, nodes[i].parent_changed);
+            // Name;Parent;parent_changed;sent;replies
+            printf("Printer:%s;%s;%d;%ld;%ld\n", nodes[i].name,
+                    nodes[i].current_parent, nodes[i].parent_changed,
+                    nodes[i].sent, nodes[i].replies);
+            printf("Parents:%s:", nodes[i].name);
+            for(int j = 0; j < nodes[i].parent_changed; j++) {
+                printf("%s;", nodes[i].parents[j]);
+            }
+            printf("\n");
             // add values
             total_parent_change = total_parent_change + nodes[i].parent_changed;
             node_amount++;
@@ -76,7 +82,7 @@ static void *_dispatch_thread(void *arg)
     (void)arg;
     msg_init_queue(dispatch_queue, DISPATCH_QUEUE_SIZE);
     bool send_finished = false;
-
+    uint8_t node_no = 0;
     msg_t msg;
     while (!send_finished || msg_avail() > 0) {
         msg_receive(&msg);
@@ -98,12 +104,13 @@ static void *_dispatch_thread(void *arg)
             continue;
         }
 
-        // Name;time;rtt;etx;energy;hp;rssi;lqi;replies;sent
-        printf("Dispatcher:%s;%ld;%ld;%d;%d;%d;%d;%d;%ld;%ld\n", 
-               address, ping->time_passed, ping->rtt_last, ping->etx, 
-               ping->energy, ping->hp, ping->rssi, ping->lqi, ping->replies, ping->msg_no);
-        put_node(payload->address, ping, nodes);
-        
+        // Name;time;rtt;rtt_msg_no;etx;hp;rssi;lqi;replies;sent
+        printf("Dispatcher:%s;%ld;%ld;%ld;%d;%d;%d;%d;%ld;%ld\n", 
+               address, ping->time_passed, ping->rtt_last, ping->rtt_last_no, 
+               ping->etx, ping->hp, ping->rssi, ping->lqi, ping->replies, 
+               ping->msg_no);
+        node_no = put_node(payload->address, ping, nodes, node_no);
+
         free(payload);
     }
     puts("Dispatch: Dispatch thread terminates");
@@ -115,16 +122,19 @@ static void *_dispatch_thread(void *arg)
 static void *_listen_thread(void *ctx)
 {
     (void)ctx;
-    static char server_buffer[PACKET_SIZE];
+    static char server_buffer[PAYLOAD_SIZE_MAX];
     uint32_t timeout = (NUM_OF_PINGS * delay_us) + (120 * US_PER_SEC);
     
     while (running) {
         /* receive ping */
         int res = sock_udp_recv(&sock, server_buffer,
-                                PACKET_SIZE, 
+                                PAYLOAD_SIZE_MAX, 
                                 timeout,
                                 &remote);
         if (res == -ETIMEDOUT) {
+            if (!first_msg_rcvd) {
+                continue;
+            }
             puts("Listen: Listen thread terminates");
             running = false;
             msg_t stop_msg = { .type = MSG_STOP };
@@ -145,7 +155,7 @@ static void *_listen_thread(void *ctx)
         /* send pong back */
         msg_ping_t *ping = (void *)server_buffer;
         pong->msg_no = ping->msg_no;
-        if (sock_udp_send(&sock, pong, PACKET_SIZE, &remote) < 0) {
+        if (sock_udp_send(&sock, pong, sizeof(pong), &remote) < 0) {
             puts("Listen: Error sending reply");
         }
         else {
@@ -167,7 +177,7 @@ static void *_listen_thread(void *ctx)
 
         msg_t msg;
         msg.content.ptr = copy;
-        if (msg_try_send(&msg, dispatch_pid) <= 0) {
+        if (msg_send(&msg, dispatch_pid) <= 0) {
             printf("Listen: Dispatch queue full\n");
             free(copy);
             continue;

@@ -40,7 +40,7 @@ static sock_udp_t sock;
 static char send_thread_stack[THREAD_STACKSIZE_MAIN + THREAD_EXTRA_STACKSIZE_PRINTF];
 static char listen_thread_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE_PRINTF];
 
-static uint8_t buf_tx[PACKET_SIZE];
+static uint8_t buf_tx[PAYLOAD_SIZE_MAX];
 static msg_ping_t *ping = (void *)buf_tx;
 static uint32_t initial_time;
 
@@ -145,14 +145,14 @@ static void *_listen_thread(void *ctx)
 {
     (void)ctx;
     puts("Listen: listen thread start");
-
-    static uint8_t buf[PACKET_SIZE];
+    uint32_t last_pong_no = 0;
+    static uint8_t buf[PAYLOAD_SIZE_MAX];
     msg_pong_t *pong = (void *)buf;
 
     uint32_t timeout = (NUM_OF_PINGS * delay_us) +  (45 * US_PER_SEC);
     while (running) {
         /* receive pong */
-        int res = sock_udp_recv(&sock, buf, PACKET_SIZE, timeout, NULL);
+        int res = sock_udp_recv(&sock, buf, PAYLOAD_SIZE_MAX, timeout, NULL);
 
         if (res == -ETIMEDOUT) {
             if (!sending) {
@@ -171,11 +171,16 @@ static void *_listen_thread(void *ctx)
             continue;
         }
 
+        if (pong->msg_no <= last_pong_no) {
+            continue;
+        }
         printf("Listen: pong received %ld\n", pong->msg_no);
+        last_pong_no = pong->msg_no;
         /* calculate RTT and save */
         mutex_lock(&mu);
         uint32_t rtt = _get_rtt(pong->msg_no);
         ping->rtt_last = rtt;
+        ping->rtt_last_no = pong->msg_no;
         ping->replies++;
         mutex_unlock(&mu);
     }
@@ -189,7 +194,7 @@ static void *_listen_thread(void *ctx)
 /* sending thread sends ping messages to server */
 static void *_send_thread(void *ctx)
 {
-    ztimer_sleep(ZTIMER_SEC, 15);
+    ztimer_sleep(ZTIMER_SEC, 60);
     puts("Send: sending thread start");
 
     /* prepare udp endpoint*/
@@ -226,7 +231,7 @@ static void *_send_thread(void *ctx)
         mutex_unlock(&mu);
 
         /* send UDP msg */
-        if((res = sock_udp_send(&sock, &local_ping, PACKET_SIZE, &remote)) < 0) {
+        if((res = sock_udp_send(&sock, &local_ping, sizeof(msg_ping_t), &remote)) < 0) {
             puts("Send: could not send");
         }
         printf("Sent msg: Info %ld-%ld\n", ping->msg_no, ping->replies);
@@ -311,7 +316,7 @@ int main(void)
     }
     ping->last_info = 1;
     for(int i = 0; i < 5; i++) {
-        sock_udp_send(&sock, ping, PACKET_SIZE, &remote);
+        sock_udp_send(&sock, ping, sizeof(msg_ping_t), &remote);
         ztimer_sleep(ZTIMER_SEC, 1);
     }
     printf("Sent last message: %ld-%ld\n", ping->msg_no, ping->replies);

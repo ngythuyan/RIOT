@@ -1,4 +1,4 @@
-APPLICATION = experiment_root
+APPLICATION = simple_root
 
 # If no BOARD is found in the environment, use this default:
 BOARD ?= feather-nrf52840-sense
@@ -11,11 +11,9 @@ RIOTBASE ?= $(CURDIR)/../../../../..
 USEMODULE += ztimer
 USEMODULE += ztimer_sec
 USEMODULE += ztimer_usec
-USEMODULE += sema_inv
 
 # Neighbor Stats
 USEMODULE += netstats_neighbor
-USEMODULE += netstats_neighbor_etx
 USEMODULE += netstats_neighbor_rssi
 USEMODULE += netstats_neighbor_lqi
 
@@ -26,7 +24,6 @@ USEMODULE += sock
 USEMODULE += sock_async_event
 
 USEMODULE += netdev_default
-USEMODULE += netutils
 USEMODULE += gnrc_ipv6_default
 USEMODULE += auto_init_gnrc_netif
 
@@ -40,35 +37,22 @@ USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
-USEMODULE += gnrc_rpl_mrhof_etx
-# optional alternative metric, hardware must support it
-#USEMODULE += gnrc_rpl_mrhof_lqi
+USEMODULE += gnrc_rpl_mrhof_lqi
 
 # adjust these parameters to the number of nodes and the number of parent set
-CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=20
-CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=20
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=60
+CFLAGS += -DCONFIG_GNRC_IPV6_NIB_OFFL_NUMOF=60
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_DEFAULT_ROUTER_NUMOF=3
 
 # CSMA parameters
-CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MIN_BE=5
-CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_RETRIES=6
-CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MAX_BE=7
-
-# UDP queue size
-CFLAGS += -DCONFIG_GNRC_UDP_MSG_QUEUE_SIZE_EXP=5
-CFLAGS += -DCONFIG_GNRC_PKTBUF_SIZE=12288
-
-# Shell
-USEMODULE += shell
-USEMODULE += shell_cmds_default
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MIN_BE=4
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_RETRIES=5
+CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CSMA_CA_MAX_BE=6
 
 # in case border router is up
 CFLAGS += -DCONFIG_IEEE802154_DEFAULT_CHANNEL=15
 
-# extra module
-SRC += main.c
-SRC += experiment.c
-SRC += structures.c
+#CFLAGS=-DCONFIG_IEEE802154_DEFAULT_TXPOWER=-12
 
 # Disable shell to save space and enforce no-shell operation
 #DISABLE_MODULE += shell

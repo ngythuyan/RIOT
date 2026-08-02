@@ -44,23 +44,19 @@
 /* ================= Parameter configuration ================= */
 /* load of experiment */
 //static uint32_t delay_us = US_PER_SEC;
-//static uint32_t delay_us = 500 * US_PER_MS;
-static uint32_t delay_us = 50 * US_PER_MS;
+static uint32_t delay_us = 500 * US_PER_MS;
+//static uint32_t delay_us = 50 * US_PER_MS;
 
 /* duration of experiment */
 #ifndef NUM_OF_PINGS
-#define NUM_OF_PINGS  (500)
+#define NUM_OF_PINGS  (1500)
 #endif
 
 /* Size of network */
 #ifndef NUM_OF_NODES
-#define NUM_OF_NODES  (50)
+#define NUM_OF_NODES  (10)
 #endif
 
-/* Packet Size */
-#ifndef PACKET_SIZE
-#define PACKET_SIZE  (128)
-#endif
 /* ================= Configuration END ================= */
 
 /**
@@ -116,12 +112,12 @@ typedef struct {
     uint32_t msg_no;    /**< message number */
     uint32_t replies;   /**< number of replies received from server    */
     uint32_t rtt_last;  /**< round trip time of the last packet        */
+    uint32_t rtt_last_no;
+    uint32_t time_passed; /**< time since start of experiment (measured by node) */
     uint16_t etx;       /**< etx of node */
-    uint16_t energy;    /**< energy of node */
     uint8_t hp;         /**< hp of node */
     uint8_t rssi;       /**< rssi of node */
     uint8_t lqi;        /**< lqi of node */
-    uint32_t time_passed; /**< time since start of experiment (measured by node) */
     uint8_t last_info;
     char parent[IPV6_CUSTOM_ADDR_STR_LEN];    /**< parent of node */
 } msg_ping_t;

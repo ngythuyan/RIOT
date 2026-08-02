@@ -11,65 +11,48 @@
  */
 #include "structures.h"
 
-uint32_t hash_ipv6(uint8_t addr[])
-{
-    uint32_t hash = 0;
-    for(int i = 0; i < 16; i++)
-    {
-        hash = hash * 7 + addr[i];
-    }
-    hash = hash % NODE_MAP_SIZE;
-    return hash;
-}
-
 bool cmp_addrs(uint8_t slot_address[], uint8_t rcv_address[])
 {
     return memcmp(rcv_address, slot_address, IPV6_U8_ADDR_LEN) == 0;
 }
 
-uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[])
+uint8_t put_node(ipv6_addr_t addr, msg_ping_t *ping, node_info nodes[], uint8_t num)
 {
-    /* find free index */
-    uint32_t hash = hash_ipv6(addr.u8);
-    node_info *target_slot = &nodes[hash];
-    bool check = cmp_addrs(target_slot->address, addr.u8);
-    uint32_t tries = 0;
-    while(target_slot->occupied && !check && tries < NODE_MAP_SIZE)
-    {
-        hash = (hash + 1) % NODE_MAP_SIZE;
-        target_slot = &nodes[hash];
-        check = cmp_addrs(target_slot->address, addr.u8);
+    if (num >= NODE_MAP_SIZE) {
+        puts("Structures: Array full!");
+        return num;
     }
 
-    if (tries >= NODE_MAP_SIZE)
-    {
-        printf("put_node: table full for some reason\n");
-        return 2;
+    /* find index of node */
+    for(int i = 0; i < num; i++) {
+        if(nodes[i].occupied && cmp_addrs(nodes[i].address, addr.u8)) {
+            nodes[i].replies = ping->replies;
+            nodes[i].sent = ping->msg_no;
+            if (strncmp(nodes[i].current_parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN) != 0) {
+                nodes[i].parent_changed++;
+                if( nodes[i].parent_changed < MAX_PARENT_CHANGE) {
+                    strncpy(nodes[i].parents[nodes[i].parent_changed], ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1); 
+                    nodes[i].parents[nodes[i].parent_changed][IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
+                }
+                strncpy(nodes[i].current_parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
+                nodes[i].current_parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
+            }
+            return num;
+        }
     }
 
-    /* put in data */
-    memcpy(target_slot->address, addr.u8, IPV6_U8_ADDR_LEN);
-    target_slot->replies = ping->replies;
-    target_slot->sent = ping->msg_no;
-
-    /* save information parent child relationship */
-    if(target_slot->occupied == false)
-    {
-        target_slot->occupied = true;
-
-        ipv6_to_identifier(&addr, target_slot->current_parent.child);
-        strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
-        target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
-        return 1;
-    }
-    else if (strncmp(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN) != 0)
-    {
-        target_slot->parent_changed++;
-        strncpy(target_slot->current_parent.parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
-        target_slot->current_parent.parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
-        return 0;
-    }
-    return 0;
+    /* register new node */
+    memcpy(nodes[num].address, addr.u8, IPV6_U8_ADDR_LEN);
+    nodes[num].occupied = true;
+    nodes[num].replies = ping->replies;
+    nodes[num].sent = ping->msg_no;
+    nodes[num].parent_changed = 0;
+    ipv6_to_identifier(&addr, nodes[num].name);
+    strncpy(nodes[num].current_parent, ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1);
+    nodes[num].current_parent[IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
+    strncpy(nodes[num].parents[0], ping->parent, IPV6_CUSTOM_ADDR_STR_LEN - 1); 
+    nodes[num].parents[0][IPV6_CUSTOM_ADDR_STR_LEN - 1] = '\0';
+    return num + 1;
 }
 
 void print_tree(node_info *info)
@@ -81,7 +64,7 @@ void print_tree(node_info *info)
         node_info node = info[i];
         if (node.occupied)
         {
-            printf("-%s,%s", node.current_parent.parent, node.current_parent.child);
+            printf("-%s,%s", info[i].current_parent, info[i].name);
         }
     }
     printf("\n");

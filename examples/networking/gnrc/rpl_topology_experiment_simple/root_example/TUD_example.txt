@@ -1,0 +1,118 @@
+Functions:
+map_add
+parse_ip_pair
+send_ipv6
+process_incoming_data
+main
+
+int main(void)
+{
+    msg_init_queue(_main_msg_queue, MAIN_QUEUE_SIZE);
+    printf("\n=== RPL Node Starting ===\n");
+    xtimer_sleep(2);
+
+    /* Get first network interface */
+    gnrc_netif_t *netif = gnrc_netif_iter(NULL);
+    if (!netif) {
+        puts("No network interface found");
+        return 1;
+    }
+
+    printf("Network interface PID: %d\n", netif->pid);
+
+    // TASK 1 initialize RPL (auto init is included in Makefile)
+    
+gnrc_rpl_init(netif->pid);
+
+    xtimer_sleep(2);
+    
+    /* Register for IPv6 experimental protocol 253 */
+    // TASK 1 register IPV6 with Custom Protocol
+gnrc_netreg_entry_t server =
+    GNRC_NETREG_ENTRY_INIT_PID(253, thread_getpid());
+
+int reg_result = gnrc_netreg_register(GNRC_NETTYPE_IPV6, &server);
+    
+    if (reg_result < 0) {
+        printf("ERROR: IPv6 registration failed: %d\n", reg_result);
+        return 1;
+    }
+    
+    printf("Root thread registered for IPv6 packets\n");
+
+#if ROOT
+    printf("=== Initializing as DODAG Root ===\n");
+
+  
+    ipv6_addr_t dodag_id;
+	// TASK 2 Create DODAG Root with ip and initialize Root Node
+ipv6_addr_from_str(&dodag_id, "2001:db8::1");
+gnrc_netif_ipv6_addr_add(netif, &dodag_id, 64, 0);
+
+gnrc_rpl_instance_t *inst = gnrc_rpl_root_init(1, &dodag_id, false, false);
+    if (!inst) {
+        puts("RPL Root init failed");
+        return 1;
+    }
+    
+    while (1) {
+        msg_t msg;
+        puts("Waiting for packet...");
+        msg_receive(&msg);
+        
+        gnrc_pktsnip_t *pkt = msg.content.ptr;
+        if (msg.type == GNRC_NETAPI_MSG_TYPE_RCV) {
+            //Extract ipv6 and custom protocol header seperately
+            gnrc_pktsnip_t *payload =
+                gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_UNDEF);
+            gnrc_pktsnip_t *ipv6 =
+                gnrc_pktsnip_search_type(pkt, GNRC_NETTYPE_IPV6);
+
+            if (payload && ipv6) {
+                // Get payload data
+                char buf[payload->size + 1];
+                memcpy(buf, payload->data, payload->size);
+                buf[payload->size] = 0;
+                
+                printf("Received Message: %s\n", buf);
+                
+                // TASK 3 Visualize the network
+                process_incoming_data(buf);
+
+            }
+
+        }
+        gnrc_pktbuf_release(pkt);
+    }
+
+#else
+    /* Non-root node: send IPv6 packets to root */
+    ipv6_addr_t root_addr;
+    ipv6_addr_from_str(&root_addr, "2001:db8::1");
+
+    while (1) {
+        gnrc_rpl_instance_t *inst = gnrc_rpl_instance_get(1);
+        
+
+        if (!inst || !inst->dodag.parents) {
+            xtimer_sleep(1);
+            continue;
+        }
+        
+        char src2[IPV6_ADDR_MAX_STR_LEN];
+        ipv6_addr_to_str(src2, &netif->ipv6.addrs[0], sizeof(src2));
+                
+        char src[IPV6_ADDR_MAX_STR_LEN];
+        ipv6_addr_to_str(src, &inst->dodag.parents->addr, sizeof(src));
+
+        printf("Parent IP: %s My IP %s\n", src, src2);
+    
+        send_ipv6(&root_addr, src, src2);
+        xtimer_sleep(5);
+    }
+#endif
+
+    gnrc_netreg_unregister(GNRC_NETTYPE_IPV6, &server);
+
+    return 0;
+}
