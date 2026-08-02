@@ -40,7 +40,8 @@ USEMODULE += gnrc_rpl
 USEMODULE += auto_init_gnrc_rpl
 USEMODULE += gnrc_ipv6_router_default
 USEMODULE += gnrc_rpl_mrhof
-USEMODULE += gnrc_rpl_mrhof_energy
+USEMODULE += gnrc_rpl_mrhof_etx
+#USEMODULE += gnrc_rpl_mrhof_energy
 
 # adjust these parameters to the number of nodes and the number of parent set
 CFLAGS += -DCONFIG_GNRC_IPV6_NIB_NUMOF=12

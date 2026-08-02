@@ -7,7 +7,7 @@
 #define ADC_BAT_RESISTOR_DIV  (2)
 //#define VBAT_MAX_MV           (4250)
 #define VBAT_MAX_MV           (4150)
-#define VBAT_MIN_MV           (3500)
+//#define VBAT_MIN_MV           (3500)
 #define AVG_CNT (16)
 #define ADC_BATTERY_LINE ADC_LINE(5)
 

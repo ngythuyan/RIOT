@@ -30,12 +30,8 @@ static char dispatch_thread_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKS
 static msg_t dispatch_queue[DISPATCH_QUEUE_SIZE];
 static kernel_pid_t dispatch_pid;
 
-static uint8_t buf_tx[PAYLOAD_SIZE_MAX + sizeof(msg_pong_t)];
-static msg_pong_t *pong = (void *)buf_tx;
-
 static sema_inv_t thread_sync;
 static bool running;
-static bool first_msg_rcvd = false;
 
 // record data
 static node_info nodes[NODE_MAP_SIZE] = {0};
@@ -58,10 +54,11 @@ static void _print_data(void)
         if(nodes[i].occupied)
         {
             // print Node infos
-            // Name;Parent;parent_changed;pdr
-            printf("Printer:%s;%s;%d\n", nodes[i].current_parent.child,
-                    nodes[i].current_parent.parent, nodes[i].parent_changed);
-            printf("Parents:%s:", nodes[i].current_parent.child);
+            // Name;Parent;parent_changed;msgs;missing
+            printf("Printer:%s;%s;%d;%ld;%ld\n", nodes[i].name,
+                    nodes[i].current_parent, nodes[i].parent_changed, 
+                    nodes[i].sent, nodes[i].missing);
+            printf("Parentsof%s:%s:", nodes[i].name , nodes[i].current_parent);
             for(int j = 0; j < nodes[i].parent_changed; j++) {
                 printf("%s;", nodes[i].parents[j]);
             }
@@ -81,7 +78,7 @@ static void *_dispatch_thread(void *arg)
     (void)arg;
     msg_init_queue(dispatch_queue, DISPATCH_QUEUE_SIZE);
     bool send_finished = false;
-
+    uint8_t nodes_registered = 0;
     msg_t msg;
     while (!send_finished || msg_avail() > 0) {
         msg_receive(&msg);
@@ -101,9 +98,7 @@ static void *_dispatch_thread(void *arg)
         printf("Dispatcher:%s;%ld;%d;%d;%d;%d;%d;\n", 
                address, ping->msg_no, ping->etx, ping->energy, 
                ping->hp, ping->rssi, ping->lqi);
-        if (put_node(payload->address, ping, nodes) > 0 ) {
-            print_tree(nodes);
-        }
+        nodes_registered = put_node(payload->address, ping, nodes, nodes_registered);
         free(payload);
     }
     puts("Dispatch: Dispatch thread terminates");

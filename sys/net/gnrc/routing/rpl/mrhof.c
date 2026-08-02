@@ -61,10 +61,7 @@ static inline uint16_t _link_metric(netstats_nb_t *stats)
     if (stats == NULL) {
         return MRHOF_MAX_PATH_COST;
     }
-#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
-    /* 100 = best, 0 = worst energy; map best to ETX = 1, worst to ETX = 7 */
-    return 3 * (100 - get_energetic_happiness()) * 255 / 100 + NETSTATS_NB_ETX_DIVISOR;
-#elif IS_USED(MODULE_GNRC_RPL_MRHOF_LQI)
+#if IS_USED(MODULE_GNRC_RPL_MRHOF_LQI)
     /* 255 = best, 0 = worst LQI; map best to ETX = 1, worst to ETX = 7 */
     return 3 * (0xFF - stats->lqi) + NETSTATS_NB_ETX_DIVISOR;
 #elif IS_USED(MODULE_GNRC_RPL_MRHOF_ETX)
@@ -160,9 +157,6 @@ static int _mrhof_cmp_fresh(netif_t *netif,
 
 static void reset(gnrc_rpl_dodag_t *dodag)
 {
-#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
-    init_mrhof_energy();
-#endif
     (void) dodag;
 }
 

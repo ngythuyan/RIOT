@@ -43,8 +43,6 @@
 /* ================= Parameter configuration ================= */
 /* load of experiment */
 static uint32_t delay_us = 2 * US_PER_SEC;
-//static uint32_t delay_us = 500 * US_PER_MS;
-//static uint32_t delay_us = 50 * US_PER_MS;
 
 /* Size of network */
 #ifndef NUM_OF_NODES

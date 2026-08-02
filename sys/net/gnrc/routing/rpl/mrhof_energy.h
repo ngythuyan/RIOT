@@ -42,5 +42,6 @@ uint8_t get_energetic_happiness(void);
 
 /**
  * @brief   Initialize energy variables
+ * @attention should be called at the start of application before RPL is initalized
  */
 void init_mrhof_energy(void);

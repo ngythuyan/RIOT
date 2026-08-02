@@ -1,6 +1,8 @@
 #include "mrhof_energy.h"
-
 //#define ADC_BATTERY_LINE (5)
+#include <string.h>
+
+#define ROOT (1)
 
 static uint32_t initial_energy;
 static uint32_t initial_time;
@@ -18,6 +20,9 @@ uint32_t get_remaining_energy(void)
 
 uint8_t get_energetic_happiness(void)
 {
+#if ROOT
+    return 25U;
+#endif
     double e_bat = (double) get_remaining_energy();
     double time_passed = (double) ztimer_now(ZTIMER_USEC) - initial_time;
 
@@ -38,10 +43,10 @@ uint8_t get_energetic_happiness(void)
 
 void init_mrhof_energy(void)
 {
-    initial_time = ztimer_now(ZTIMER_USEC);
-    initial_energy = get_remaining_energy();
-
     if (adc_init(ADC_BATTERY_LINE) < 0) {
         printf("battery_info_init: ADC_LINE(%u) init [FAILED]\n", ADC_BATTERY_LINE);
     }
+
+    initial_time = ztimer_now(ZTIMER_USEC);
+    initial_energy = get_remaining_energy();
 }

@@ -19,20 +19,19 @@
 #include "random.h"
 #include "macros/utils.h"
 #include "net/utils.h"
+//#include "mrhof_energy.h"
 
 // for neighbor stats
 #include "net/netstats.h"
 #include "net/netstats/neighbor.h"
 
 // for battery reading
-#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
-    #include "battery.h"
-    #include "board.h"
-    #include "saul_reg.h"
-#endif
+#include "battery.h"
 
-#define HIGH_ENERGY_CONSUMPTION (1)
+#define HIGH_ENERGY_CONSUMPTION (0)
 
+#include "board.h"
+#include "saul_reg.h"
 #if HIGH_ENERGY_CONSUMPTION
     #include "ws281x.h"
     #include "ws281x_params.h"
@@ -118,6 +117,9 @@ int main(void)
 
     puts("Node: Starting experiment"); 
 
+    /* start MRHOF Energy */
+//    init_mrhof_energy();
+
     /* init RPL */
     gnrc_rpl_init(netif->pid);
     puts("Node: Wait for parent");
@@ -138,9 +140,11 @@ int main(void)
     sock_udp_ep_t local = { .family = AF_INET6,
                             .netif = SOCK_ADDR_ANY_NETIF,
                             .port = PORT_DEFAULT };
+    /* prepare udp endpoint*/
     sock_udp_ep_t remote = { 0 };
-    remote.family = AF_INET6;
-    remote.port = PORT_DEFAULT;
+    if (sock_udp_str2ep(&remote, SERVER_DEFAULT) < 0) {
+        puts("Send: Unable to parse destination address");
+    }
 
     if (sock_udp_create(&sock, &local, NULL, 0) < 0) {
         puts("Node: Error creating UDP sock");
@@ -151,11 +155,10 @@ int main(void)
     _print_addr();
 
     /* turn on LEDs */
-#if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
+    LED1_ON;
+#if HIGH_ENERGY_CONSUMPTION
     LED0_ON;
     LED1_ON;
-#endif
-#if HIGH_ENERGY_CONSUMPTION
     ws281x_init (&dev, &ws281x_params[0]);
     color_rgb_t color = {255, 255, 255};
     ws281x_set (&dev, 0, color);
@@ -165,13 +168,6 @@ int main(void)
     ztimer_sleep(ZTIMER_SEC, 30);
     puts("Send: sending thread start");
     uint32_t extra =  random_uint32_range (0, 200);
-
-    /* prepare udp endpoint*/
-    sock_udp_ep_t remote = { 0 };
-    if (sock_udp_str2ep(&remote, SERVER_DEFAULT) < 0) {
-        puts("Send: Unable to parse destination address");
-    }
-
     while (1) {
         /* prepare ping message */
         int res = get_parent(ping->parent);
@@ -184,9 +180,7 @@ int main(void)
             ztimer_sleep(ZTIMER_USEC, delay_us);
             continue;
         }
-    #if IS_USED(MODULE_GNRC_RPL_MRHOF_ENERGY)
         ping->energy = get_voltage();
-    #endif
         ping->msg_no = seq_no;
         msg_ping_t local_ping = *ping;
 
